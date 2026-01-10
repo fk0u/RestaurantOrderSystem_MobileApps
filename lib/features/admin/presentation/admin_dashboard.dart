@@ -96,7 +96,7 @@ class AdminDashboard extends ConsumerWidget {
                           ),
                         ),
                         title: Text(order.orderId, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${order.date} • ${order.status == 'Completed' ? 'Selesai' : 'Pending'}'),
+                        subtitle: Text('${order.date} • ${order.status}'),
                         trailing: Text(
                           currencyFormatter.format(order.total),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

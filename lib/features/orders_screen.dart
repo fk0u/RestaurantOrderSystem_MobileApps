@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/design_system.dart';
+import 'orders/presentation/orders_controller.dart';
+import 'orders/domain/order_entity.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -27,6 +30,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final ordersState = ref.watch(ordersControllerProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -39,6 +44,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Pesanan Kamu', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.refresh), 
+                    onPressed: () => ref.refresh(ordersControllerProvider),
+                  ),
                 ],
               ),
             ),
@@ -69,124 +78,122 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
             ),
 
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                   // Active Orders
-                   ListView(
-                     padding: const EdgeInsets.fromLTRB(AppDimens.s21, AppDimens.s21, AppDimens.s21, 100),
-                     children: [
-                       _buildOrderCard(
-                         context, 
-                         'ORD-9281', 
-                         'Sedang Dimasak', 
-                         AppColors.warning,
-                         ['Burger Sapi Klasik x1', 'Kentang Goreng x1'],
-                         '2 Item',
-                         'Rp 65.000',
-                         0.5
-                       ),
-                     ],
-                   ),
-                   // History
-                   ListView(
-                     padding: const EdgeInsets.fromLTRB(AppDimens.s21, AppDimens.s21, AppDimens.s21, 100),
-                     children: [
-                        _buildOrderCard(
-                         context, 
-                         'ORD-1002', 
-                         'Selesai', 
-                         AppColors.success,
-                         ['Pasta Carbonara x1', 'Es Teh Lemon x2'],
-                         '3 Item',
-                         'Rp 85.000',
-                         1.0
-                       ),
-                       const SizedBox(height: AppDimens.s13),
-                       _buildOrderCard(
-                         context, 
-                         'ORD-0991', 
-                         'Selesai', 
-                         AppColors.success,
-                         ['Ayam Goreng Krispi x2'],
-                         '2 Item',
-                         'Rp 70.000',
-                         1.0
-                       ),
-                     ],
-                   ),
-                ],
+              child: ordersState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Error: $err')),
+                data: (orders) {
+                  final activeOrders = orders.where((o) => o.status != 'Selesai' && o.status != 'Dibatalkan').toList();
+                  final historyOrders = orders.where((o) => o.status == 'Selesai' || o.status == 'Dibatalkan').toList();
+
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                       // Active Orders
+                       _buildOrderList(activeOrders),
+                       // History
+                       _buildOrderList(historyOrders),
+                    ],
+                  );
+                },
               ),
             ),
-            // Spacer for Dock
-            const SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOrderCard(
-    BuildContext context, 
-    String id, 
-    String status, 
-    Color statusColor,
-    List<String> items,
-    String itemCount,
-    String total,
-    double progress,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimens.s21),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimens.r24),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildOrderList(List<Order> orders) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text('Belum ada pesanan', style: TextStyle(color: Colors.grey[500])),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(AppDimens.s21, AppDimens.s21, AppDimens.s21, 100),
+      itemCount: orders.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppShadows.card,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(id, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(order.id, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(order.status).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      order.status,
+                      style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              ...order.items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Text('${item.quantity}x', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.product.name),
+                          if (item.modifiers.isNotEmpty)
+                             Text(item.modifiers.join(', '), style: TextStyle(fontSize: 10, color: Colors.grey[500], fontStyle: FontStyle.italic)),
+                        ]
+                      )
+                    ),
+                  ],
                 ),
-                child: Text(status, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
+              )),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${order.items.length} Item', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  Text(currencyFormatter.format(order.totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: AppDimens.s13),
-          const Divider(),
-          const SizedBox(height: AppDimens.s13),
-          
-          ...items.map((i) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(i, style: const TextStyle(fontSize: 15)),
-          )),
-          
-          const SizedBox(height: AppDimens.s21),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(itemCount, style: const TextStyle(color: AppColors.textSecondary)),
-              Text(total, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ],
-          ),
-          
-          if (progress < 1.0) ...[
-             const SizedBox(height: AppDimens.s21),
-             ClipRRect(
-               borderRadius: BorderRadius.circular(4),
-               child: LinearProgressIndicator(value: progress, backgroundColor: Colors.grey[100], color: AppColors.primary),
-             ),
-          ]
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai': return AppColors.success;
+      case 'dibatalkan': return Colors.red;
+      case 'sedang diproses': return Colors.orange;
+      case 'sedang dimasak': return AppColors.warning;
+      default: return AppColors.primary;
+    }
   }
 }

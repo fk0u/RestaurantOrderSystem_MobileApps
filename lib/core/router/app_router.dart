@@ -7,6 +7,7 @@ import '../../features/payment/presentation/payment_screen.dart';
 import '../../features/menu/presentation/product_detail_screen.dart';
 import '../../features/menu/domain/product_entity.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/tables/presentation/table_screen.dart';
 import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/kitchen/presentation/kitchen_dashboard.dart';
 import '../../features/admin/presentation/admin_dashboard.dart';
@@ -45,7 +46,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         switch (user?.role) {
           case 'admin': return '/admin';
           case 'kitchen': return '/kitchen';
-          case 'customer': default: return '/onboarding';
+          case 'cashier': return '/tables';
+          case 'customer': default: return '/menu'; // Customer goes to menu directly
         }
       }
 
@@ -55,6 +57,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/tables',
+        builder: (context, state) => const TableScreen(),
       ),
       GoRoute(
         path: '/login',

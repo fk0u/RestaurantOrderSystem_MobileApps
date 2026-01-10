@@ -17,10 +17,16 @@ final cartTaxProvider = Provider<double>((ref) {
   return subtotal * 0.11; // PPN 11%
 });
 
+final cartServiceFeeProvider = Provider<double>((ref) {
+  final subtotal = ref.watch(cartSubtotalProvider);
+  return subtotal * 0.05; // Service Charge 5%
+});
+
 final cartTotalProvider = Provider<double>((ref) {
   final subtotal = ref.watch(cartSubtotalProvider);
   final tax = ref.watch(cartTaxProvider);
-  return subtotal + tax;
+  final service = ref.watch(cartServiceFeeProvider);
+  return subtotal + tax + service;
 });
 
 class CartController extends StateNotifier<List<CartItem>> {

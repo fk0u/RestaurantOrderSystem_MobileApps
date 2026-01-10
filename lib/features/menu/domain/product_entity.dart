@@ -6,6 +6,7 @@ class Product {
   final String imageUrl;
   final String category;
   final int calories;
+  final int stock;
 
   Product({
     required this.id,
@@ -15,6 +16,7 @@ class Product {
     required this.imageUrl,
     required this.category,
     this.calories = 0,
+    this.stock = 0,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class Product {
       imageUrl: json['imageUrl'] as String,
       category: json['category'] as String,
       calories: (json['calories'] as num?)?.toInt() ?? 0,
+      stock: (json['stock'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -38,6 +41,20 @@ class Product {
       'imageUrl': imageUrl,
       'category': category,
       'calories': calories,
+      'stock': stock,
     };
+  }
+
+  Product copyWith({int? stock}) {
+    return Product(
+      id: id,
+      name: name,
+      description: description,
+      price: price,
+      imageUrl: imageUrl,
+      category: category,
+      calories: calories,
+      stock: stock ?? this.stock,
+    );
   }
 }

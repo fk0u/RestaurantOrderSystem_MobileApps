@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../cart/presentation/cart_controller.dart';
 import 'package:uuid/uuid.dart';
+import '../../auth/presentation/auth_controller.dart';
+import '../../orders/data/order_repository.dart';
+import '../../orders/domain/order_entity.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -20,40 +23,108 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   void _processPayment() async {
     setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(seconds: 2)); // Mock API
+    
+    // Simulate Network/Processing
+    await Future.delayed(const Duration(seconds: 2)); 
     
     if (!mounted) return;
-    ref.read(cartControllerProvider.notifier).clearCart();
-    
-    // Show Success Dialog
+
+    final user = ref.read(authControllerProvider).value;
+    final cartItems = ref.read(cartControllerProvider);
+    final total = ref.read(cartTotalProvider);
+    final orderId = 'ORD-${const Uuid().v4().substring(0, 8).toUpperCase()}';
+
+    // Create Order Object
+    final order = Order(
+      id: orderId,
+      userId: user?.id ?? 'guest',
+      userName: user?.name ?? 'Guest',
+      totalPrice: total,
+      status: 'Sedang Diproses', // Initial Status
+      timestamp: DateTime.now(),
+      items: cartItems,
+    );
+
+    // Save to SQLite
+    try {
+      await ref.read(orderRepositoryProvider).createOrder(order);
+      
+      // Clear Cart
+      ref.read(cartControllerProvider.notifier).clearCart();
+      
+      // Show Receipt Dialog
+      if (!mounted) return;
+      _showReceiptDialog(context, orderId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  void _showReceiptDialog(BuildContext context, String orderId) {
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false, // Must tap button to close
+      builder: (context) => Dialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
-              child: const Icon(Icons.check, color: Colors.white, size: 40),
-            ),
-            const SizedBox(height: 24),
-            const Text('Pembayaran Berhasil!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Pesanan Anda sedang disiapkan dapur.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              context.pop(); // Close dialog
-              context.go('/onboarding'); // Reset flow for demo
-            },
-            child: const Text('Selesai', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)), // Thermal print style (boxy)
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               const SizedBox(height: 24),
+               const Icon(Icons.receipt_long, size: 48, color: Colors.black87),
+               const SizedBox(height: 16),
+               const Text('RESTO NUSANTARA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+               const Text('Jl. Sudirman No. 1, Jakarta', style: TextStyle(fontSize: 12, color: Colors.grey)),
+               const Divider(),
+               Padding(
+                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                 child: Column(
+                   children: [
+                     _buildReceiptRow('Order ID', orderId),
+                     _buildReceiptRow('Tanggal', DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())),
+                   ],
+                 ),
+               ),
+               const Divider(style: BorderStyle.none), // Dashed line simulation ideally
+               const SizedBox(height: 8),
+               // We need to look up the order or just use current cart state (since we cleared cart, we rely on context or pass data)
+               // However, we just cleared the cart in _processPayment. 
+               // For this demo, simply show the Success state. Real receipt needs data passed.
+               const Text('PEMBAYARAN BERHASIL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+               const SizedBox(height: 16),
+               
+               Padding(
+                 padding: const EdgeInsets.all(24.0),
+                 child: SizedBox(
+                   width: double.infinity,
+                   child: ElevatedButton(
+                     onPressed: () {
+                       context.pop();
+                       context.go('/menu');
+                     },
+                     style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                     child: const Text('Tutup'),
+                   ),
+                 ),
+               )
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReceiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -97,6 +168,27 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                  ],
                ),
              ),
+             const SizedBox(height: 24),
+
+             // Payment Breakdown
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: Colors.white,
+                 borderRadius: BorderRadius.circular(16),
+                 border: Border.all(color: Colors.grey.shade200),
+               ),
+               child: Column(
+                  children: [
+                    _buildSummaryRow('Subtotal', ref.watch(cartSubtotalProvider), currencyFormatter),
+                    _buildSummaryRow('Pajak (11%)', ref.watch(cartTaxProvider), currencyFormatter),
+                    _buildSummaryRow('Service Charge (5%)', ref.watch(cartServiceFeeProvider), currencyFormatter),
+                    const Divider(height: 24),
+                    _buildSummaryRow('Total', total, currencyFormatter, isTotal: true),
+                  ],
+               ),
+             ),
+
              const SizedBox(height: 32),
              
              // Payment Methods
@@ -119,7 +211,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
              const SizedBox(height: 32),
 
-             // QR Display
+             // QR Display or Info
              if (_selectedMethod == 'qris')
                Column(
                  children: [
@@ -198,6 +290,32 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
           ],
         ),
+      ),
+    );
+  }
+  Widget _buildSummaryRow(String label, double value, NumberFormat formatter, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label, 
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14, 
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              color: isTotal ? Colors.black : Colors.grey[600]
+            ),
+          ),
+          Text(
+            formatter.format(value),
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+               color: isTotal ? AppColors.primary : Colors.grey[800]
+            ),
+          ),
+        ],
       ),
     );
   }

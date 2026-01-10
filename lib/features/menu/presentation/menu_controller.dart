@@ -3,7 +3,8 @@ import '../domain/product_entity.dart';
 import '../data/menu_repository.dart';
 
 final menuControllerProvider = StateNotifierProvider<MenuController, AsyncValue<List<Product>>>((ref) {
-  return MenuController(ref.read(menuRepositoryProvider));
+  final repository = MenuRepository(); // Now uses SQLite internally
+  return MenuController(repository);
 });
 
 class MenuController extends StateNotifier<AsyncValue<List<Product>>> {

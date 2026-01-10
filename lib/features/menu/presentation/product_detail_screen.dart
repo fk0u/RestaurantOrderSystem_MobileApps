@@ -192,6 +192,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                            maxLines: 2,
                          ),
                          
+                         const SizedBox(height: 16),
+                         
+                         // Stock Indicator
+                         Row(
+                           children: [
+                              Icon(
+                                widget.product.stock > 0 ? Icons.check_circle : Icons.cancel,
+                                color: widget.product.stock > 0 ? AppColors.success : Colors.red,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.product.stock > 0 ? 'Stok Tersedia: ${widget.product.stock}' : 'Stok Habis',
+                                style: TextStyle(
+                                  color: widget.product.stock > 0 ? AppColors.success : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                           ],
+                         ),
+
                          const SizedBox(height: 100), // Space for bottom bar
                        ],
                      ),
@@ -228,9 +249,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ),
                         Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         IconButton(
-                          onPressed: () => setState(() => _quantity++),
+                          onPressed: _quantity < widget.product.stock ? () => setState(() => _quantity++) : null,
                           icon: const Icon(Icons.add),
                           iconSize: 18,
+                          color: _quantity >= widget.product.stock ? Colors.grey : null,
                         ),
                       ],
                     ),
@@ -239,26 +261,32 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   // Add Button
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                         ref.read(cartControllerProvider.notifier).addItem(
-                           widget.product,
-                           quantity: _quantity,
-                           note: _noteController.text.isNotEmpty ? _noteController.text : null,
-                           modifiers: List.from(_selectedModifiers),
-                         );
-                         context.pop(); // Close sheet/screen
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text('${widget.product.name} ditambahkan'), duration: const Duration(milliseconds: 800))
-                         );
-                      },
+                      onPressed: widget.product.stock > 0 
+                        ? () {
+                           ref.read(cartControllerProvider.notifier).addItem(
+                             widget.product,
+                             quantity: _quantity,
+                             note: _noteController.text.isNotEmpty ? _noteController.text : null,
+                             modifiers: List.from(_selectedModifiers),
+                           );
+                           context.pop(); // Close sheet/screen
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(content: Text('${widget.product.name} ditambahkan'), duration: const Duration(milliseconds: 800))
+                           );
+                        }
+                        : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
+                        disabledBackgroundColor: Colors.grey[300],
                       ),
-                      child: Text('Tambah - ${currencyFormatter.format(totalPrice)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(
+                        widget.product.stock > 0 ? 'Tambah - ${currencyFormatter.format(totalPrice)}' : 'Stok Habis',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
