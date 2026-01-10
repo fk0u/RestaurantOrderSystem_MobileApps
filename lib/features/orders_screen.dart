@@ -120,7 +120,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(AppDimens.s21, AppDimens.s21, AppDimens.s21, 100),
       itemCount: orders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final order = orders[index];
         final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);

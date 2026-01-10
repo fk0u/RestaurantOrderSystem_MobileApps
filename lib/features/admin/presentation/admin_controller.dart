@@ -25,7 +25,7 @@ class AdminController extends StateNotifier<AsyncValue<List<OrderSummary>>> {
     state = const AsyncValue.loading();
     try {
       final orders = await _repository.getOrders();
-      final stats = await _repository.getSalesStats();
+      // final stats = await _repository.getSalesStats(); // Kept for future use if needed, or just remove.
       
       // We are fetching all orders, but for the summary list let's just use the recent ones.
       // But we need to pass the Total Revenue from the DB stats, not just the list sum (if we wanted pagination).

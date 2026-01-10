@@ -88,7 +88,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                    ],
                  ),
                ),
-               const Divider(style: BorderStyle.none), // Dashed line simulation ideally
+               const Divider(), // Dashed line simulation ideally
                const SizedBox(height: 8),
                // We need to look up the order or just use current cart state (since we cleared cart, we rely on context or pass data)
                // However, we just cleared the cart in _processPayment. 

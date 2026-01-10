@@ -29,7 +29,6 @@ class DatabaseHelper {
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     const idType = 'TEXT PRIMARY KEY';
     const textType = 'TEXT NOT NULL';
-    const textNullable = 'TEXT';
     const doubleType = 'REAL NOT NULL';
     const intType = 'INTEGER NOT NULL';
 

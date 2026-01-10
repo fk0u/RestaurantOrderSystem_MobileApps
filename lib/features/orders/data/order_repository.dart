@@ -117,7 +117,6 @@ class OrderRepository {
       whereArgs: [orderId],
     );
   }
-  }
 
   Future<Map<String, dynamic>> getSalesStats() async {
     final db = await DatabaseHelper.instance.database;
