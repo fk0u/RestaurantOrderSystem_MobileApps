@@ -26,21 +26,30 @@ final cartTotalProvider = Provider<double>((ref) {
 class CartController extends StateNotifier<List<CartItem>> {
   CartController() : super([]);
 
-  void addItem(Product product) {
-    // Check if exists
-    final index = state.indexWhere((item) => item.product.id == product.id);
+  void addItem(Product product, {int quantity = 1, String? note, List<String> modifiers = const []}) {
+    // Check if exists with same product, note, and modifiers
+    final index = state.indexWhere((item) {
+      final isSameProduct = item.product.id == product.id;
+      final isSameNote = item.note == note;
+      // Simple list equality check (assuming order implies identity, which is acceptable for this level)
+      final isSameModifiers = item.modifiers.length == modifiers.length && 
+          item.modifiers.every((m) => modifiers.contains(m));
+      
+      return isSameProduct && isSameNote && isSameModifiers;
+    });
+
     if (index >= 0) {
-      // Increment
+      // Increment existing item
       final oldItem = state[index];
-      final newQuantity = oldItem.quantity + 1;
+      final newQuantity = oldItem.quantity + quantity;
       state = [
         ...state.sublist(0, index),
         oldItem.copyWith(quantity: newQuantity),
         ...state.sublist(index + 1),
       ];
     } else {
-      // Add new
-      state = [...state, CartItem(product: product)];
+      // Add new distinct item
+      state = [...state, CartItem(product: product, quantity: quantity, note: note, modifiers: modifiers)];
     }
   }
 

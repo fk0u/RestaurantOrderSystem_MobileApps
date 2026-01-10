@@ -54,7 +54,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final size = MediaQuery.of(context).size;
 
     // Listen to errors
     ref.listen(authControllerProvider, (previous, next) {
@@ -80,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -136,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                          color: Colors.white,
                          borderRadius: BorderRadius.circular(20),
                          boxShadow: [
-                           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
+                           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))
                          ],
                        ),
                        labelColor: AppColors.primary,

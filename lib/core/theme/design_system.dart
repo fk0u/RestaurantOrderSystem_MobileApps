@@ -4,6 +4,7 @@ class AppDimens {
   // Golden Ratio Spacing
   static const double s8 = 8.0;
   static const double s13 = 13.0; // 8 * 1.618
+  static const double s16 = 16.0;
   static const double s21 = 21.0; // 13 * 1.618
   static const double s34 = 34.0; // 21 * 1.618
   static const double s55 = 55.0; // 34 * 1.618
@@ -22,7 +23,7 @@ class AppDimens {
 class AppShadows {
   static final List<BoxShadow> card = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.05),
+      color: Colors.black.withValues(alpha: 0.05),
       blurRadius: 20,
       offset: const Offset(0, 10),
     ),
@@ -30,7 +31,7 @@ class AppShadows {
   
   static final List<BoxShadow> float = [
     BoxShadow(
-      color: const Color(0xFF7CB342).withOpacity(0.3), // Primary shadow
+      color: const Color(0xFF7CB342).withValues(alpha: 0.3), // Primary shadow
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -38,7 +39,7 @@ class AppShadows {
   
   static final List<BoxShadow> dock = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: Colors.black.withValues(alpha: 0.08),
       blurRadius: 30,
       offset: const Offset(0, -5),
     ),

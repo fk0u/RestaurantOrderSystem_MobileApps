@@ -36,7 +36,7 @@ class MenuScreen extends ConsumerWidget {
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
                       ],
                     ),
                     child: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -123,10 +123,10 @@ class MenuScreen extends ConsumerWidget {
                     return const Center(child: Text('Tidak ada menu tersedia'));
                   }
                   return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.75, // Taller card
+                      childAspectRatio: 0.7, // Adjusted for overflow
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                     ),
@@ -144,8 +144,10 @@ class MenuScreen extends ConsumerWidget {
                         qty = 0;
                       }
 
-                      return Container(
-                        decoration: BoxDecoration(
+                      return GestureDetector(
+                        onTap: () => context.push('/product_detail', extra: product),
+                        child: Container(
+                          decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(AppDimens.r24),
                           boxShadow: AppShadows.card,
@@ -172,15 +174,12 @@ class MenuScreen extends ConsumerWidget {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
+                                        color: Colors.black.withValues(alpha: 0.6),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(children: [const Icon(Icons.local_fire_department, color: Colors.orange, size: 14), const SizedBox(width: 4), Text('${product.calories} kkal', style: const TextStyle(color: Colors.white, fontSize: 10))]),
                                     ),
-                                  )
-                                ],
-                              ),
-                            ),
+                                  ),
                                   // Fav Button
                                   Positioned(
                                     top: 10,
@@ -257,7 +256,8 @@ class MenuScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                      );
+                      ),
+                    );
                     },
                   );
                 },
@@ -266,13 +266,6 @@ class MenuScreen extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: cartItems.isNotEmpty ? FloatingActionButton.extended(
-        onPressed: () => context.push('/cart'),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
-        label: Text('${cartItems.length} Item  |  Lihat', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ) : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

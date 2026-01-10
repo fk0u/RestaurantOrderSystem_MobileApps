@@ -84,7 +84,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                decoration: BoxDecoration(
                  color: AppColors.primary,
                  borderRadius: BorderRadius.circular(20),
-                 boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
+                 boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))],
                ),
                child: Column(
                  children: [
@@ -140,7 +140,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               if (_selectedMethod == 'cash')
                 Container(
                    padding: const EdgeInsets.all(24),
-                   decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                   decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
                    child: const Row(
                      children: [
                        Icon(Icons.info_outline, color: AppColors.warning),
@@ -180,7 +180,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           color: isSelected ? Colors.white : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent, width: 2),
-          boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 10)] : [],
+          boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 10)] : [],
         ),
         child: Row(
           children: [

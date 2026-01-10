@@ -55,7 +55,7 @@ class CartScreen extends ConsumerWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2)),
                           ],
                         ),
                         child: Row(
@@ -84,6 +84,14 @@ class CartScreen extends ConsumerWidget {
                                     currencyFormatter.format(item.product.price),
                                     style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                                   ),
+                                  if (item.modifiers.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(item.modifiers.join(', '), style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic)),
+                                  ],
+                                  if (item.note != null && item.note!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text('Catatan: ${item.note}', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                  ],
                                 ],
                               ),
                             ),
@@ -110,7 +118,7 @@ class CartScreen extends ConsumerWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(30)),

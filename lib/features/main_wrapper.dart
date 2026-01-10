@@ -32,7 +32,7 @@ class _MainWrapperState extends State<MainWrapper> {
       bottomNavigationBar: Container(
         margin: const EdgeInsets.symmetric(horizontal: AppDimens.s21, vertical: AppDimens.s21),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95), // Glass-ish
+          color: Colors.white.withValues(alpha: 0.95), // Glass-ish
           borderRadius: BorderRadius.circular(AppDimens.r32),
           boxShadow: AppShadows.dock,
         ),
@@ -41,7 +41,7 @@ class _MainWrapperState extends State<MainWrapper> {
           child: NavigationBar(
             height: 70,
             backgroundColor: Colors.transparent,
-            indicatorColor: AppColors.primary.withOpacity(0.15),
+            indicatorColor: AppColors.primary.withValues(alpha: 0.15),
             selectedIndex: widget.navigationShell.currentIndex,
             onDestinationSelected: _goBranch,
             labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -55,6 +55,11 @@ class _MainWrapperState extends State<MainWrapper> {
                 icon: Icon(Icons.receipt_long_outlined),
                 selectedIcon: Icon(Icons.receipt_long, color: AppColors.primary),
                 label: 'Pesanan',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.shopping_bag_outlined),
+                selectedIcon: Icon(Icons.shopping_bag, color: AppColors.primary),
+                label: 'Keranjang',
               ),
               NavigationDestination(
                 icon: Icon(Icons.person_outline),

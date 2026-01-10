@@ -18,7 +18,6 @@ class StorageService {
   // Keys
   static const String _tokenKey = 'auth_token';
   static const String _userRoleKey = 'user_role';
-  static const String _userNameKey = 'user_name';
 
   // Auth Methods
   Future<void> saveAuthToken(String token) async {

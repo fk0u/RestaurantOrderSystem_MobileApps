@@ -1,16 +1,19 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/cart/presentation/cart_screen.dart';
 import '../../features/payment/presentation/payment_screen.dart';
+import '../../features/menu/presentation/product_detail_screen.dart';
+import '../../features/menu/domain/product_entity.dart';
+import '../../features/splash/splash_screen.dart';
 import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/kitchen/presentation/kitchen_dashboard.dart';
 import '../../features/admin/presentation/admin_dashboard.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/main_wrapper.dart';
-import '../../features/placeholder_screens.dart';
+import '../../features/orders_screen.dart';
+import '../../features/profile_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -28,6 +31,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isLogin = state.uri.toString() == '/login';
       final isRegister = state.uri.toString() == '/register';
 
+      // Allow Splash to run
+      if (isSplash) return null;
+
       if (isLoading || hasError) return null;
 
       if (!isAuthenticated) {
@@ -35,7 +41,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      if (isLogin || isSplash || isRegister) {
+      if (isLogin || isRegister) {
         switch (user?.role) {
           case 'admin': return '/admin';
           case 'kitchen': return '/kitchen';
@@ -48,7 +54,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const Scaffold(body: Center(child: CircularProgressIndicator())),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -87,7 +93,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 3: Profile
+          // Tab 3: Cart
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/cart',
+                builder: (context, state) => const CartScreen(),
+              ),
+            ],
+          ),
+          // Tab 4: Profile
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -99,10 +114,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
       GoRoute(path: '/payment', builder: (context, state) => const PaymentScreen()),
       GoRoute(path: '/kitchen', builder: (context, state) => const KitchenDashboard()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminDashboard()),
+      GoRoute(
+        path: '/product_detail',
+        builder: (context, state) {
+          final product = state.extra as Product;
+          return ProductDetailScreen(product: product);
+        },
+      ),
     ],
   );
 });
