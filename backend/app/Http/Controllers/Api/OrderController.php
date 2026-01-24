@@ -89,6 +89,7 @@ class OrderController extends Controller
                 'tax' => $tax,
                 'service' => $service,
                 'total' => $total,
+                'ready_at' => now()->addMinutes(20),
             ]);
 
             foreach ($data['items'] as $item) {

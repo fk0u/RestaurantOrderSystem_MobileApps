@@ -1,166 +1,125 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/database/database_helper.dart';
 import '../../cart/domain/cart_item.dart';
 import '../../menu/domain/product_entity.dart';
 import '../domain/order_entity.dart';
+import '../../../core/services/api_client.dart';
 
 final orderRepositoryProvider = Provider((ref) => OrderRepository());
 
 class OrderRepository {
+  final ApiClient _api = ApiClient();
+
   Future<int> getNextQueueNumber(String orderType, DateTime date) async {
-    final db = await DatabaseHelper.instance.database;
-
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-
-    final result = await db.rawQuery('''
-      SELECT COUNT(*) as count
-      FROM orders
-      WHERE orderType = ?
-      AND timestamp >= ? AND timestamp < ?
-    ''', [
-      orderType,
-      startOfDay.millisecondsSinceEpoch,
-      endOfDay.millisecondsSinceEpoch,
-    ]);
-
-    final count = (result.first['count'] as int?) ?? 0;
-    return count + 1;
+    return 0;
   }
 
-  Future<void> createOrder(Order order) async {
-    final db = await DatabaseHelper.instance.database;
-    
-    await db.transaction((txn) async {
-      // 1. Verify and Deduct Stock
-      for (var item in order.items) {
-        // Get current stock
-        final List<Map<String, dynamic>> result = await txn.query(
-          'products',
-          columns: ['stock'],
-          where: 'id = ?',
-          whereArgs: [item.product.id],
-        );
-
-        if (result.isNotEmpty) {
-          final currentStock = result.first['stock'] as int;
-          if (currentStock < item.quantity) {
-             throw Exception('Stok tidak cukup untuk ${item.product.name}. Sisa: $currentStock');
-          }
-          
-          // Deduct
-          await txn.update(
-            'products',
-            {'stock': currentStock - item.quantity},
-            where: 'id = ?',
-            whereArgs: [item.product.id],
-          );
-        }
-      }
-
-      // 2. Insert Order
-      await txn.insert('orders', order.toMap());
-
-      // 3. Insert Items
-      for (var item in order.items) {
-        final modifiersJson = item.modifiers.isNotEmpty ? jsonEncode(item.modifiers) : null;
-        await txn.insert('order_items', {
-          'orderId': order.id,
-          'productId': item.product.id,
-          'productName': item.product.name,
-          'productPrice': item.product.price,
+  Future<Order> createOrder(Order order) async {
+    final result = await _api.post('/orders', {
+      'user_id': order.userId == 'guest' ? null : order.userId,
+      'order_type': order.orderType,
+      'table_id': order.tableId,
+      'table_number': order.tableNumber,
+      'table_capacity': order.tableCapacity,
+      'items': order.items.map((item) {
+        return {
+          'product_id': int.tryParse(item.product.id) ?? item.product.id,
           'quantity': item.quantity,
           'note': item.note,
-          'modifiers': modifiersJson,
-        });
-      }
+          'modifiers': item.modifiers,
+        };
+      }).toList(),
     });
 
-    // Notify listeners or refresh logic if needed (handled by providers)
+    final items = (result['items'] as List<dynamic>? ?? []).map((itemMap) {
+      final product = Product(
+        id: itemMap['product_id']?.toString() ?? '',
+        name: itemMap['product_name'] ?? '',
+        description: '',
+        price: (itemMap['product_price'] as num?)?.toDouble() ?? 0,
+        imageUrl: '',
+        category: '',
+      );
+      final modifiers = (itemMap['modifiers'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+      return CartItem(
+        product: product,
+        quantity: (itemMap['quantity'] as num?)?.toInt() ?? 0,
+        note: itemMap['note'] as String?,
+        modifiers: modifiers,
+      );
+    }).toList();
+
+    return Order(
+      id: result['id'].toString(),
+      userId: result['user_id']?.toString() ?? 'guest',
+      userName: result['user']?['name'] ?? order.userName,
+      totalPrice: (result['total'] as num?)?.toDouble() ?? order.totalPrice,
+      status: result['status'] ?? order.status,
+      timestamp: DateTime.tryParse(result['created_at'] ?? '') ?? DateTime.now(),
+      orderType: result['order_type'] ?? order.orderType,
+      tableId: result['table_id']?.toString(),
+      tableNumber: result['table_number'],
+      tableCapacity: result['table_capacity'] as int?,
+      queueNumber: (result['queue_number'] as num?)?.toInt() ?? 0,
+      readyAt: result['ready_at'] != null ? DateTime.tryParse(result['ready_at']) : null,
+      items: items,
+    );
   }
 
   Future<List<Order>> getOrders() async {
-    final db = await DatabaseHelper.instance.database;
-    
-    // Get Orders
-    final orderMaps = await db.query('orders', orderBy: 'timestamp DESC');
-    
-    List<Order> orders = [];
-
-    for (var map in orderMaps) {
-      final orderId = map['id'] as String;
-      
-      // Get Items for this order
-      final itemMaps = await db.query(
-        'order_items',
-        where: 'orderId = ?',
-        whereArgs: [orderId],
-      );
-
-      final items = itemMaps.map((itemMap) {
-        // Reconstruct Product (Simplified, just for display)
-        // In a real app we might fetch the full product again, but for history, preserving the snapshot name/price is better.
+    final data = await _api.getList('/orders');
+    return data.map((item) {
+      final map = item as Map<String, dynamic>;
+      final items = (map['items'] as List<dynamic>? ?? []).map((itemMap) {
         final product = Product(
-          id: itemMap['productId'] as String,
-          name: itemMap['productName'] as String,
-          description: '', // Not needed for history list
-          price: itemMap['productPrice'] as double,
-          imageUrl: '', // We might need to fetch this if we want to show image
+          id: itemMap['product_id']?.toString() ?? '',
+          name: itemMap['product_name'] ?? '',
+          description: '',
+          price: (itemMap['product_price'] as num?)?.toDouble() ?? 0,
+          imageUrl: '',
           category: '',
         );
-
-        final modifiersString = itemMap['modifiers'] as String?;
-        final List<String> modifiers = modifiersString != null 
-            ? List<String>.from(jsonDecode(modifiersString)) 
-            : [];
-
+        final modifiers = (itemMap['modifiers'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
         return CartItem(
           product: product,
-          quantity: itemMap['quantity'] as int,
+          quantity: (itemMap['quantity'] as num?)?.toInt() ?? 0,
           note: itemMap['note'] as String?,
           modifiers: modifiers,
         );
       }).toList();
 
-      orders.add(Order.fromMap(map, items: items));
-    }
-
-    return orders;
+      return Order(
+        id: map['id'].toString(),
+        userId: map['user_id']?.toString() ?? 'guest',
+        userName: map['user']?['name'] ?? 'Guest',
+        totalPrice: (map['total'] as num?)?.toDouble() ?? 0,
+        status: map['status'] ?? 'Sedang Diproses',
+        timestamp: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+        orderType: map['order_type'] ?? 'takeaway',
+        tableId: map['table_id']?.toString(),
+        tableNumber: map['table_number'],
+        tableCapacity: map['table_capacity'] as int?,
+        queueNumber: (map['queue_number'] as num?)?.toInt() ?? 0,
+        readyAt: map['ready_at'] != null ? DateTime.tryParse(map['ready_at']) : null,
+        items: items,
+      );
+    }).toList();
   }
 
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
-    final db = await DatabaseHelper.instance.database;
-    final updates = <String, Object?>{'status': newStatus};
-    if (newStatus == 'Siap Saji') {
-      updates['readyAt'] = DateTime.now().millisecondsSinceEpoch;
-    }
-    await db.update('orders', updates, where: 'id = ?', whereArgs: [orderId]);
+    await _api.patch('/orders/$orderId/status', {
+      'status': newStatus,
+    });
   }
 
   Future<Order?> getOrderById(String orderId) async {
-    final db = await DatabaseHelper.instance.database;
-    final maps = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
-    if (maps.isEmpty) return null;
-    return Order.fromMap(maps.first, items: const []);
+    final orders = await getOrders();
+    for (final order in orders) {
+      if (order.id == orderId) return order;
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>> getSalesStats() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.rawQuery('''
-      SELECT 
-        COUNT(*) as count, 
-        SUM(totalPrice) as revenue 
-      FROM orders 
-      WHERE status = 'Selesai'
-    ''');
-
-    if (result.isNotEmpty) {
-      return {
-        'count': result.first['count'] ?? 0,
-        'revenue': result.first['revenue'] ?? 0.0,
-      };
-    }
     return {'count': 0, 'revenue': 0.0};
   }
 }

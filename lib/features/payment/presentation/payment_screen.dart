@@ -38,10 +38,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final cartItems = ref.read(cartControllerProvider);
     final total = ref.read(cartTotalProvider);
     final orderId = 'ORD-${const Uuid().v4().substring(0, 8).toUpperCase()}';
-    final queueNumber = await ref
-        .read(orderRepositoryProvider)
-        .getNextQueueNumber(details.orderType, DateTime.now());
-    final readyAt = DateTime.now().add(const Duration(minutes: 20));
 
     // Create Order Object
     final order = Order(
@@ -55,14 +51,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       tableId: details.table?.id,
       tableNumber: details.table?.number,
       tableCapacity: details.table?.capacity,
-      queueNumber: queueNumber,
-      readyAt: readyAt,
+      queueNumber: 0,
+      readyAt: null,
       items: cartItems,
     );
 
     // Save to SQLite
     try {
-      await ref.read(orderRepositoryProvider).createOrder(order);
+      final createdOrder = await ref.read(orderRepositoryProvider).createOrder(order);
       if (details.orderType == 'dine_in' && details.table != null) {
         await ref
             .read(tableRepositoryProvider)
@@ -74,7 +70,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       
       // Show Receipt Dialog
       if (!mounted) return;
-      _showReceiptDialog(context, order);
+      _showReceiptDialog(context, createdOrder);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
