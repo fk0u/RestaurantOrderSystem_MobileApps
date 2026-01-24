@@ -49,6 +49,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cartItems = ref.watch(cartControllerProvider);
+    final isInCart = cartItems.any((item) => item.product.id == widget.product.id);
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     
     // Calculate total including modifiers (mock pricing)
@@ -243,16 +245,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     child: Row(
                       children: [
                         IconButton(
-                          onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null,
+                          onPressed: !isInCart && _quantity > 1 ? () => setState(() => _quantity--) : null,
                           icon: const Icon(Icons.remove),
                           iconSize: 18,
                         ),
                         Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         IconButton(
-                          onPressed: _quantity < widget.product.stock ? () => setState(() => _quantity++) : null,
+                          onPressed: !isInCart && _quantity < widget.product.stock ? () => setState(() => _quantity++) : null,
                           icon: const Icon(Icons.add),
                           iconSize: 18,
-                          color: _quantity >= widget.product.stock ? Colors.grey : null,
+                          color: _quantity >= widget.product.stock || isInCart ? Colors.grey : null,
                         ),
                       ],
                     ),
@@ -261,7 +263,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   // Add Button
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: widget.product.stock > 0 
+                      onPressed: widget.product.stock > 0 && !isInCart
                         ? () {
                            ref.read(cartControllerProvider.notifier).addItem(
                              widget.product,
@@ -284,7 +286,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         disabledBackgroundColor: Colors.grey[300],
                       ),
                       child: Text(
-                        widget.product.stock > 0 ? 'Tambah - ${currencyFormatter.format(totalPrice)}' : 'Stok Habis',
+                        widget.product.stock <= 0
+                            ? 'Stok Habis'
+                            : isInCart
+                                ? 'Sudah di Keranjang'
+                                : 'Tambah - ${currencyFormatter.format(totalPrice)}',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
