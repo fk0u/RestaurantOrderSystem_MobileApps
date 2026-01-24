@@ -9,6 +9,8 @@ import 'package:uuid/uuid.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../orders/data/order_repository.dart';
 import '../../orders/domain/order_entity.dart';
+import '../../tables/data/table_repository.dart';
+import '../../tables/domain/table_entity.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -22,6 +24,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   bool _isProcessing = false;
 
   void _processPayment() async {
+    final details = await _collectOrderDetails();
+    if (details == null) return;
+
     setState(() => _isProcessing = true);
     
     // Simulate Network/Processing
@@ -33,28 +38,43 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final cartItems = ref.read(cartControllerProvider);
     final total = ref.read(cartTotalProvider);
     final orderId = 'ORD-${const Uuid().v4().substring(0, 8).toUpperCase()}';
+    final queueNumber = await ref
+        .read(orderRepositoryProvider)
+        .getNextQueueNumber(details.orderType, DateTime.now());
+    final readyAt = DateTime.now().add(const Duration(minutes: 20));
 
     // Create Order Object
     final order = Order(
       id: orderId,
       userId: user?.id ?? 'guest',
-      userName: user?.name ?? 'Guest',
+      userName: details.customerName,
       totalPrice: total,
       status: 'Sedang Diproses', // Initial Status
       timestamp: DateTime.now(),
+      orderType: details.orderType,
+      tableId: details.table?.id,
+      tableNumber: details.table?.number,
+      tableCapacity: details.table?.capacity,
+      queueNumber: queueNumber,
+      readyAt: readyAt,
       items: cartItems,
     );
 
     // Save to SQLite
     try {
       await ref.read(orderRepositoryProvider).createOrder(order);
+      if (details.orderType == 'dine_in' && details.table != null) {
+        await ref
+            .read(tableRepositoryProvider)
+            .updateTableStatus(details.table!.id, 'occupied');
+      }
       
       // Clear Cart
       ref.read(cartControllerProvider.notifier).clearCart();
       
       // Show Receipt Dialog
       if (!mounted) return;
-      _showReceiptDialog(context, orderId);
+      _showReceiptDialog(context, order);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -62,7 +82,163 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
   }
 
-  void _showReceiptDialog(BuildContext context, String orderId) {
+  Future<_OrderDetails?> _collectOrderDetails() async {
+    final user = ref.read(authControllerProvider).value;
+    final nameController = TextEditingController(text: user?.name ?? '');
+    String orderType = 'dine_in';
+    RestaurantTable? selectedTable;
+    final tablesFuture = ref.read(tableRepositoryProvider).getTables();
+
+    return showModalBottomSheet<_OrderDetails>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final isNameValid = nameController.text.trim().isNotEmpty;
+            final isTableValid = orderType == 'takeaway' || selectedTable != null;
+            final canSubmit = isNameValid && isTableValid;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Detail Transaksi',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Pemesan',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (_) => setModalState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Tipe Pesanan',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  RadioListTile<String>(
+                    value: 'dine_in',
+                    groupValue: orderType,
+                    title: const Text('Dine In'),
+                    onChanged: (value) {
+                      setModalState(() {
+                        orderType = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    value: 'takeaway',
+                    groupValue: orderType,
+                    title: const Text('Takeaway'),
+                    onChanged: (value) {
+                      setModalState(() {
+                        orderType = value!;
+                        selectedTable = null;
+                      });
+                    },
+                  ),
+                  if (orderType == 'dine_in') ...[
+                    const SizedBox(height: 8),
+                    FutureBuilder<List<RestaurantTable>>(
+                      future: tablesFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: LinearProgressIndicator(),
+                          );
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Text('Tidak ada data meja.');
+                        }
+
+                        final availableTables = snapshot.data!
+                            .where((t) => t.status == 'available')
+                            .toList();
+
+                        if (availableTables.isEmpty) {
+                          return const Text('Tidak ada meja tersedia saat ini.');
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<RestaurantTable>(
+                              value: selectedTable,
+                              items: availableTables
+                                  .map((t) => DropdownMenuItem(
+                                        value: t,
+                                        child: Text('${t.number} • ${t.capacity} orang'),
+                                      ))
+                                  .toList(),
+                              onChanged: (value) {
+                                setModalState(() => selectedTable = value);
+                              },
+                              decoration: const InputDecoration(
+                                labelText: 'Pilih Meja',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            if (selectedTable != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Kapasitas meja: ${selectedTable!.capacity} orang',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ]
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => context.pop(),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: canSubmit
+                              ? () {
+                                  context.pop(_OrderDetails(
+                                    customerName: nameController.text.trim(),
+                                    orderType: orderType,
+                                    table: selectedTable,
+                                  ));
+                                }
+                              : null,
+                          child: const Text('Lanjutkan'),
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showReceiptDialog(BuildContext context, Order order) {
     showDialog(
       context: context,
       barrierDismissible: false, // Must tap button to close
@@ -83,7 +259,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                  child: Column(
                    children: [
-                     _buildReceiptRow('Order ID', orderId),
+                     _buildReceiptRow('Order ID', order.id),
+                     _buildReceiptRow('Nama', order.userName),
+                     _buildReceiptRow(
+                       'Tipe',
+                       order.orderType == 'dine_in' ? 'Dine In' : 'Takeaway',
+                     ),
+                     if (order.orderType == 'dine_in' && order.tableNumber != null)
+                       _buildReceiptRow('Meja', order.tableNumber!),
+                     if (order.orderType == 'dine_in' && order.tableCapacity != null)
+                       _buildReceiptRow('Kapasitas', '${order.tableCapacity} orang'),
+                     _buildReceiptRow('No. Antrian', '#${order.queueNumber}'),
+                     _buildReceiptRow(
+                       'Perkiraan Siap',
+                       DateFormat('HH:mm').format(order.readyAt ?? DateTime.now()),
+                     ),
                      _buildReceiptRow('Tanggal', DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())),
                    ],
                  ),
@@ -319,4 +509,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       ),
     );
   }
+}
+
+class _OrderDetails {
+  final String customerName;
+  final String orderType;
+  final RestaurantTable? table;
+
+  _OrderDetails({
+    required this.customerName,
+    required this.orderType,
+    required this.table,
+  });
 }

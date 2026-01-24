@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../orders/data/order_repository.dart';
 import '../../orders/domain/order_entity.dart';
+import '../../../core/services/notification_service.dart';
 
 
 
@@ -30,6 +31,17 @@ class KitchenController extends StateNotifier<AsyncValue<List<Order>>> {
   Future<void> updateStatus(String orderId, String newStatus) async {
     try {
       await _repository.updateOrderStatus(orderId, newStatus);
+      if (newStatus == 'Siap Saji') {
+        final order = await _repository.getOrderById(orderId);
+        if (order != null) {
+          await NotificationService.showOrderReadyNotification(
+            orderId: order.id,
+            queueNumber: order.queueNumber,
+            orderType: order.orderType,
+            tableNumber: order.tableNumber,
+          );
+        }
+      }
       await loadOrders(); // Refresh
     } catch (e) {
       // Handle error (maybe show toast? but controller can't easily do that without context)

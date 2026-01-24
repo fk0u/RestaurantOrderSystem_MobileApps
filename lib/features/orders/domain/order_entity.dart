@@ -7,6 +7,12 @@ class Order {
   final double totalPrice;
   final String status;
   final DateTime timestamp;
+  final String orderType; // 'dine_in' or 'takeaway'
+  final String? tableId;
+  final String? tableNumber;
+  final int? tableCapacity;
+  final int queueNumber;
+  final DateTime? readyAt;
   final List<CartItem> items; // Make sure this is populated when fetching
 
   Order({
@@ -16,6 +22,12 @@ class Order {
     required this.totalPrice,
     required this.status, // 'pending', 'processing', 'completed', 'cancelled'
     required this.timestamp,
+    required this.orderType,
+    required this.queueNumber,
+    this.tableId,
+    this.tableNumber,
+    this.tableCapacity,
+    this.readyAt,
     this.items = const [],
   });
 
@@ -27,6 +39,12 @@ class Order {
       'totalPrice': totalPrice,
       'status': status,
       'timestamp': timestamp.millisecondsSinceEpoch,
+      'orderType': orderType,
+      'tableId': tableId,
+      'tableNumber': tableNumber,
+      'tableCapacity': tableCapacity,
+      'queueNumber': queueNumber,
+      'readyAt': readyAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -38,6 +56,14 @@ class Order {
       totalPrice: map['totalPrice'],
       status: map['status'],
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
+      orderType: map['orderType'] ?? 'takeaway',
+      tableId: map['tableId'],
+      tableNumber: map['tableNumber'],
+      tableCapacity: map['tableCapacity'] as int?,
+      queueNumber: map['queueNumber'] ?? 0,
+      readyAt: map['readyAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['readyAt'])
+          : null,
       items: items,
     );
   }

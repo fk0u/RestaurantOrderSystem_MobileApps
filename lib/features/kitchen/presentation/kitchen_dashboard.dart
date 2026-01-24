@@ -73,8 +73,34 @@ class KitchenDashboard extends ConsumerWidget {
                        ),
                        const SizedBox(height: 16),
                        Text(
-                         order.userName, // Using userName as table/identifier
+                         order.userName,
                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                       ),
+                       const SizedBox(height: 6),
+                       Wrap(
+                         spacing: 8,
+                         runSpacing: 6,
+                         children: [
+                           Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                             decoration: BoxDecoration(
+                               color: Colors.grey.shade100,
+                               borderRadius: BorderRadius.circular(10),
+                             ),
+                             child: Text(
+                               order.orderType == 'dine_in' ? 'Dine In' : 'Takeaway',
+                               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                             ),
+                           ),
+                           Text('Antrian #${order.queueNumber}',
+                               style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                           if (order.orderType == 'dine_in' && order.tableNumber != null)
+                             Text('Meja ${order.tableNumber}',
+                                 style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                           if (order.orderType == 'dine_in' && order.tableCapacity != null)
+                             Text('Kapasitas ${order.tableCapacity} orang',
+                                 style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                         ],
                        ),
                        const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
                        

@@ -19,8 +19,8 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
 
     return await openDatabase(
-      path, 
-      version: 2, 
+      path,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -73,6 +73,15 @@ class DatabaseHelper {
       await _seedRestaurantTables(db);
       await _seedSettings(db);
     }
+
+    if (oldVersion < 3) {
+      await db.execute("ALTER TABLE orders ADD COLUMN orderType TEXT DEFAULT 'takeaway'");
+      await db.execute('ALTER TABLE orders ADD COLUMN tableId TEXT');
+      await db.execute('ALTER TABLE orders ADD COLUMN tableNumber TEXT');
+      await db.execute('ALTER TABLE orders ADD COLUMN tableCapacity INTEGER');
+      await db.execute('ALTER TABLE orders ADD COLUMN queueNumber INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE orders ADD COLUMN readyAt INTEGER');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -104,7 +113,13 @@ class DatabaseHelper {
         userName $textType,
         totalPrice $doubleType,
         status $textType,
-        timestamp $intType
+        timestamp $intType,
+        orderType $textType,
+        tableId $textNullable,
+        tableNumber $textNullable,
+        tableCapacity INTEGER,
+        queueNumber $intType,
+        readyAt INTEGER
       )
     ''');
 

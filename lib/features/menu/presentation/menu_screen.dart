@@ -148,13 +148,13 @@ class MenuScreen extends ConsumerWidget {
                         onTap: () => context.push('/product_detail', extra: product),
                         child: Container(
                           decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppDimens.r24),
-                          boxShadow: AppShadows.card,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppDimens.r24),
+                            boxShadow: AppShadows.card,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                             // Image
                             Expanded(
                               flex: 5,
@@ -258,7 +258,7 @@ class MenuScreen extends ConsumerWidget {
                         ),
                       ),
                     );
-                    },
+                  },
                   );
                 },
               ),

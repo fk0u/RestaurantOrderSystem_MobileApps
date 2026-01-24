@@ -138,7 +138,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(order.id, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(order.id, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Antrian #${order.queueNumber}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -150,6 +161,31 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
                       style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      order.orderType == 'dine_in' ? 'Dine In' : 'Takeaway',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  if (order.orderType == 'dine_in' && order.tableNumber != null) ...[
+                    const SizedBox(width: 8),
+                    Text('Meja ${order.tableNumber}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                  if (order.readyAt != null) ...[
+                    const SizedBox(width: 8),
+                    Text('Siap ${DateFormat('HH:mm').format(order.readyAt!)}',
+                        style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
                 ],
               ),
               const Divider(height: 24),

@@ -8,6 +8,27 @@ import '../domain/order_entity.dart';
 final orderRepositoryProvider = Provider((ref) => OrderRepository());
 
 class OrderRepository {
+  Future<int> getNextQueueNumber(String orderType, DateTime date) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final result = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM orders
+      WHERE orderType = ?
+      AND timestamp >= ? AND timestamp < ?
+    ''', [
+      orderType,
+      startOfDay.millisecondsSinceEpoch,
+      endOfDay.millisecondsSinceEpoch,
+    ]);
+
+    final count = (result.first['count'] as int?) ?? 0;
+    return count + 1;
+  }
+
   Future<void> createOrder(Order order) async {
     final db = await DatabaseHelper.instance.database;
     
@@ -110,12 +131,18 @@ class OrderRepository {
 
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     final db = await DatabaseHelper.instance.database;
-    await db.update(
-      'orders',
-      {'status': newStatus},
-      where: 'id = ?',
-      whereArgs: [orderId],
-    );
+    final updates = <String, Object?>{'status': newStatus};
+    if (newStatus == 'Siap Saji') {
+      updates['readyAt'] = DateTime.now().millisecondsSinceEpoch;
+    }
+    await db.update('orders', updates, where: 'id = ?', whereArgs: [orderId]);
+  }
+
+  Future<Order?> getOrderById(String orderId) async {
+    final db = await DatabaseHelper.instance.database;
+    final maps = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
+    if (maps.isEmpty) return null;
+    return Order.fromMap(maps.first, items: const []);
   }
 
   Future<Map<String, dynamic>> getSalesStats() async {
