@@ -18,6 +18,8 @@ class StorageService {
   // Keys
   static const String _tokenKey = 'auth_token';
   static const String _userRoleKey = 'user_role';
+  static const String _userIdKey = 'user_id';
+  static const String _userNameKey = 'user_name';
 
   // Auth Methods
   Future<void> saveAuthToken(String token) async {
@@ -32,6 +34,22 @@ class StorageService {
     await _prefs.setString(_userRoleKey, role);
   }
 
+  Future<void> saveUserId(String id) async {
+    await _prefs.setString(_userIdKey, id);
+  }
+
+  String? getUserId() {
+    return _prefs.getString(_userIdKey);
+  }
+
+  Future<void> saveUserName(String name) async {
+    await _prefs.setString(_userNameKey, name);
+  }
+
+  String? getUserName() {
+    return _prefs.getString(_userNameKey);
+  }
+
   String? getUserRole() {
     return _prefs.getString(_userRoleKey);
   }
@@ -39,5 +57,7 @@ class StorageService {
   Future<void> clearAuth() async {
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_userRoleKey);
+    await _prefs.remove(_userIdKey);
+    await _prefs.remove(_userNameKey);
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../orders/data/order_repository.dart';
+import '../data/admin_repository.dart';
+import '../data/admin_models.dart';
 
 class OrderSummary {
   final String orderId;
@@ -12,6 +14,22 @@ class OrderSummary {
 
 final adminControllerProvider = StateNotifierProvider<AdminController, AsyncValue<List<OrderSummary>>>((ref) {
   return AdminController(ref.read(orderRepositoryProvider));
+});
+
+final reservationsProvider = FutureProvider<List<AdminReservation>>((ref) {
+  return AdminRepository().getReservations();
+});
+
+final shiftsProvider = FutureProvider<List<AdminShift>>((ref) {
+  return AdminRepository().getShifts();
+});
+
+final promotionsProvider = FutureProvider<List<AdminPromotion>>((ref) {
+  return AdminRepository().getPromotions();
+});
+
+final dailyStockProvider = FutureProvider<List<AdminDailyStock>>((ref) {
+  return AdminRepository().getDailyStocks();
 });
 
 class AdminController extends StateNotifier<AsyncValue<List<OrderSummary>>> {

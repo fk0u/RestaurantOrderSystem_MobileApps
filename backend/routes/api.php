@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\TableController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\AuthController;
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::post('/products', [ProductController::class, 'store']);
@@ -51,3 +52,6 @@ Route::patch('/notifications/{notification}/read', [NotificationController::clas
 
 Route::get('/reports/sales', [ReportController::class, 'sales']);
 Route::get('/reports/daily-stock', [ReportController::class, 'dailyStock']);
+
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/logout', [AuthController::class, 'logout']);

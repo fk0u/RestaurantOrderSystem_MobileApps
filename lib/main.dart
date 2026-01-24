@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/pusher_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,7 @@ void main() async {
   
   final storageService = await StorageService.init();
   await NotificationService.init();
+  await PusherService.init();
 
   runApp(ProviderScope(
     overrides: [

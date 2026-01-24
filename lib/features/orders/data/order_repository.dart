@@ -14,7 +14,7 @@ class OrderRepository {
   }
 
   Future<Order> createOrder(Order order) async {
-    final result = await _api.post('/orders', {
+    final response = await _api.post('/orders', {
       'user_id': order.userId == 'guest' ? null : order.userId,
       'order_type': order.orderType,
       'table_id': order.tableId,
@@ -30,7 +30,7 @@ class OrderRepository {
       }).toList(),
     });
 
-    final items = (result['items'] as List<dynamic>? ?? []).map((itemMap) {
+    final items = (response['items'] as List<dynamic>? ?? []).map((itemMap) {
       final product = Product(
         id: itemMap['product_id']?.toString() ?? '',
         name: itemMap['product_name'] ?? '',
@@ -49,18 +49,18 @@ class OrderRepository {
     }).toList();
 
     return Order(
-      id: result['id'].toString(),
-      userId: result['user_id']?.toString() ?? 'guest',
-      userName: result['user']?['name'] ?? order.userName,
-      totalPrice: (result['total'] as num?)?.toDouble() ?? order.totalPrice,
-      status: result['status'] ?? order.status,
-      timestamp: DateTime.tryParse(result['created_at'] ?? '') ?? DateTime.now(),
-      orderType: result['order_type'] ?? order.orderType,
-      tableId: result['table_id']?.toString(),
-      tableNumber: result['table_number'],
-      tableCapacity: result['table_capacity'] as int?,
-      queueNumber: (result['queue_number'] as num?)?.toInt() ?? 0,
-      readyAt: result['ready_at'] != null ? DateTime.tryParse(result['ready_at']) : null,
+      id: response['id'].toString(),
+      userId: response['user_id']?.toString() ?? 'guest',
+      userName: response['user']?['name'] ?? order.userName,
+      totalPrice: (response['total'] as num?)?.toDouble() ?? order.totalPrice,
+      status: response['status'] ?? order.status,
+      timestamp: DateTime.tryParse(response['created_at'] ?? '') ?? DateTime.now(),
+      orderType: response['order_type'] ?? order.orderType,
+      tableId: response['table_id']?.toString(),
+      tableNumber: response['table_number'],
+      tableCapacity: response['table_capacity'] as int?,
+      queueNumber: (response['queue_number'] as num?)?.toInt() ?? 0,
+      readyAt: response['ready_at'] != null ? DateTime.tryParse(response['ready_at']) : null,
       items: items,
     );
   }
