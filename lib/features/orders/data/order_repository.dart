@@ -68,8 +68,10 @@ class OrderRepository {
     );
   }
 
-  Future<List<Order>> getOrders() async {
-    final data = await _api.getList('/orders');
+  Future<List<Order>> getOrders({String? userId}) async {
+    final data = await _api.getList('/orders', query: {
+      if (userId != null && userId.isNotEmpty) 'user_id': userId,
+    });
     return data.map((item) {
       final map = item as Map<String, dynamic>;
       final items = (map['items'] as List<dynamic>? ?? []).map((itemMap) {

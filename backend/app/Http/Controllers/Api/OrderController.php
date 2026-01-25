@@ -18,9 +18,14 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Order::with(['items', 'table', 'user'])->orderByDesc('created_at')->get();
+        $userId = $request->query('user_id');
+        $query = Order::with(['items', 'table', 'user'])->orderByDesc('created_at');
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        return $query->get();
     }
 
     public function store(Request $request)
@@ -176,6 +181,32 @@ class OrderController extends Controller
                 ],
             ]);
             broadcast(new OrderReady($order));
+        }
+
+        if ($order->status === 'Selesai') {
+            Notification::create([
+                'user_id' => $order->user_id,
+                'title' => 'Pesanan selesai',
+                'body' => "Pesanan #{$order->queue_number} telah selesai.",
+                'channel' => 'order',
+                'data' => [
+                    'order_id' => $order->id,
+                    'queue_number' => $order->queue_number,
+                ],
+            ]);
+        }
+
+        if ($order->status === 'Dibatalkan') {
+            Notification::create([
+                'user_id' => $order->user_id,
+                'title' => 'Pesanan dibatalkan',
+                'body' => "Pesanan #{$order->queue_number} dibatalkan.",
+                'channel' => 'order',
+                'data' => [
+                    'order_id' => $order->id,
+                    'queue_number' => $order->queue_number,
+                ],
+            ]);
         }
 
         if (in_array($order->status, ['Selesai', 'Dibatalkan'], true) && $order->table_id) {

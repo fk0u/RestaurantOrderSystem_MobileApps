@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/design_system.dart';
 import '../presentation/notifications_controller.dart';
@@ -35,6 +36,11 @@ class NotificationsScreen extends ConsumerWidget {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
+              final createdAt = DateTime.tryParse(item.createdAt);
+              final createdLabel = createdAt != null
+                  ? DateFormat('dd/MM/yyyy HH:mm').format(createdAt)
+                  : '-';
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
@@ -44,7 +50,14 @@ class NotificationsScreen extends ConsumerWidget {
                 ),
                 child: ListTile(
                   title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(item.body),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.body),
+                      const SizedBox(height: 4),
+                      Text(createdLabel, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
                   trailing: IconButton(
                     icon: Icon(item.isRead ? Icons.check : Icons.mark_email_read),
                     onPressed: item.isRead

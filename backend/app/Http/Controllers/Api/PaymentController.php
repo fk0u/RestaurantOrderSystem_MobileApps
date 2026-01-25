@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -30,6 +31,18 @@ class PaymentController extends Controller
                 'reference' => $data['reference'] ?? null,
             ]
         );
+
+        Notification::create([
+            'user_id' => $order->user_id,
+            'title' => 'Pembayaran berhasil',
+            'body' => "Pembayaran untuk pesanan {$order->id} sebesar {$amount} berhasil.",
+            'channel' => 'payment',
+            'data' => [
+                'order_id' => $order->id,
+                'amount' => $amount,
+                'method' => $data['method'],
+            ],
+        ]);
 
         return $payment->refresh();
     }
