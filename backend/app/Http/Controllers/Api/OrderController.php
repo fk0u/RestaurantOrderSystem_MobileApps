@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\Promotion;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\RestaurantTable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -126,6 +127,11 @@ class OrderController extends Controller
                 'ready_at' => now()->addMinutes(20),
             ]);
 
+            if ($order->order_type === 'dine_in' && $order->table_id) {
+                RestaurantTable::where('id', $order->table_id)
+                    ->update(['status' => 'occupied']);
+            }
+
             foreach ($data['items'] as $item) {
                 $product = Product::findOrFail($item['product_id']);
                 OrderItem::create([
@@ -157,6 +163,11 @@ class OrderController extends Controller
 
         if ($order->status === 'Siap Saji') {
             broadcast(new OrderReady($order));
+        }
+
+        if (in_array($order->status, ['Selesai', 'Dibatalkan'], true) && $order->table_id) {
+            RestaurantTable::where('id', $order->table_id)
+                ->update(['status' => 'available']);
         }
 
         return $order->refresh();
