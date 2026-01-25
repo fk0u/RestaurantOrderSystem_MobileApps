@@ -43,9 +43,6 @@ dependencies:
   qr_flutter: ^4.1.0
   flutter_animate: ^4.5.2
   flutter_svg: ^2.2.3
-  sqflite: ^2.3.0
-  sqflite_common_ffi: ^2.3.0
-  path: ^1.8.3
   flutter_local_notifications: ^17.2.2
   http: ^1.2.2
   pusher_channels_flutter: ^2.2.0
