@@ -116,6 +116,20 @@ class OrderRepository {
     });
   }
 
+  Future<void> createPayment({
+    required String orderId,
+    required String method,
+    required double amount,
+    String? reference,
+  }) async {
+    await _api.post('/orders/$orderId/payment', {
+      'method': method,
+      'amount': amount,
+      'reference': reference,
+      'status': 'paid',
+    });
+  }
+
   Future<Order?> getOrderById(String orderId) async {
     final orders = await getOrders();
     for (final order in orders) {

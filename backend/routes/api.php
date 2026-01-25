@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\TableController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PaymentController;
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::post('/products', [ProductController::class, 'store']);
@@ -30,6 +31,7 @@ Route::put('/users/{user}', [UserController::class, 'update']);
 Route::get('/orders', [OrderController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+Route::post('/orders/{order}/payment', [PaymentController::class, 'store']);
 
 Route::post('/stock/{product}/adjust', [StockController::class, 'adjust']);
 Route::get('/stock/daily', [StockController::class, 'daily']);

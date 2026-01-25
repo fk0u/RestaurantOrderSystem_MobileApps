@@ -162,6 +162,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             .updateTableStatus(details.table!.id, 'occupied');
       }
       
+      await ref.read(orderRepositoryProvider).createPayment(
+        orderId: createdOrder.id,
+        method: _selectedMethod,
+        amount: createdOrder.totalPrice,
+          );
+
       // Clear Cart
       ref.read(cartControllerProvider.notifier).clearCart();
       
