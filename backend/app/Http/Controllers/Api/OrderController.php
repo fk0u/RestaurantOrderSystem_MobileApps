@@ -11,6 +11,7 @@ use App\Models\Promotion;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\RestaurantTable;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -162,6 +163,18 @@ class OrderController extends Controller
         ]);
 
         if ($order->status === 'Siap Saji') {
+            Notification::create([
+                'user_id' => $order->user_id,
+                'title' => 'Pesanan siap disajikan',
+                'body' => "Pesanan #{$order->queue_number} sudah siap. Silakan ambil/antar.",
+                'channel' => 'order',
+                'data' => [
+                    'order_id' => $order->id,
+                    'queue_number' => $order->queue_number,
+                    'order_type' => $order->order_type,
+                    'table_number' => $order->table_number,
+                ],
+            ]);
             broadcast(new OrderReady($order));
         }
 
