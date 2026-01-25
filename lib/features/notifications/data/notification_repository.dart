@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class NotificationRepository {
   final ApiClient _api = ApiClient();
 
-  Future<List<AppNotification>> getNotifications(WidgetRef ref) async {
+  Future<List<AppNotification>> getNotifications(Ref ref) async {
     final auth = ref.read(authControllerProvider).value;
     final query = <String, String>{};
     if (auth != null) {
