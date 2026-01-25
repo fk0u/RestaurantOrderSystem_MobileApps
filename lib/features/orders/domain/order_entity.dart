@@ -15,6 +15,9 @@ class Order {
   final int? tableCapacity;
   final int queueNumber;
   final DateTime? readyAt;
+  final String? paymentStatus;
+  final String? paymentMethod;
+  final DateTime? paidAt;
   final List<CartItem> items; // Make sure this is populated when fetching
 
   Order({
@@ -32,6 +35,9 @@ class Order {
     this.tableNumber,
     this.tableCapacity,
     this.readyAt,
+    this.paymentStatus,
+    this.paymentMethod,
+    this.paidAt,
     this.items = const [],
   });
 
@@ -51,6 +57,9 @@ class Order {
       'tableCapacity': tableCapacity,
       'queueNumber': queueNumber,
       'readyAt': readyAt?.millisecondsSinceEpoch,
+      'paymentStatus': paymentStatus,
+      'paymentMethod': paymentMethod,
+      'paidAt': paidAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -71,6 +80,11 @@ class Order {
       queueNumber: map['queueNumber'] ?? 0,
       readyAt: map['readyAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['readyAt'])
+          : null,
+      paymentStatus: map['paymentStatus'],
+      paymentMethod: map['paymentMethod'],
+      paidAt: map['paidAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['paidAt'])
           : null,
       items: items,
     );

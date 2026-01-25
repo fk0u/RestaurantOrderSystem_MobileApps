@@ -49,6 +49,8 @@ class OrderRepository {
       );
     }).toList();
 
+    final payment = response['payment'] as Map<String, dynamic>?;
+
     return Order(
       id: response['id'].toString(),
       userId: response['user_id']?.toString() ?? 'guest',
@@ -64,6 +66,9 @@ class OrderRepository {
       tableCapacity: response['table_capacity'] as int?,
       queueNumber: (response['queue_number'] as num?)?.toInt() ?? 0,
       readyAt: response['ready_at'] != null ? DateTime.tryParse(response['ready_at']) : null,
+      paymentStatus: payment?['status']?.toString(),
+      paymentMethod: payment?['method']?.toString(),
+      paidAt: payment?['paid_at'] != null ? DateTime.tryParse(payment?['paid_at']) : null,
       items: items,
     );
   }
@@ -92,6 +97,8 @@ class OrderRepository {
         );
       }).toList();
 
+      final payment = map['payment'] as Map<String, dynamic>?;
+
       return Order(
         id: map['id'].toString(),
         userId: map['user_id']?.toString() ?? 'guest',
@@ -107,6 +114,9 @@ class OrderRepository {
         tableCapacity: map['table_capacity'] as int?,
         queueNumber: (map['queue_number'] as num?)?.toInt() ?? 0,
         readyAt: map['ready_at'] != null ? DateTime.tryParse(map['ready_at']) : null,
+        paymentStatus: payment?['status']?.toString(),
+        paymentMethod: payment?['method']?.toString(),
+        paidAt: payment?['paid_at'] != null ? DateTime.tryParse(payment?['paid_at']) : null,
         items: items,
       );
     }).toList();

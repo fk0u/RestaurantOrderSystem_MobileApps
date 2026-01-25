@@ -21,7 +21,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $userId = $request->query('user_id');
-        $query = Order::with(['items', 'table', 'user'])->orderByDesc('created_at');
+        $query = Order::with(['items', 'table', 'user', 'payment'])->orderByDesc('created_at');
         if ($userId) {
             $query->where('user_id', $userId);
         }
@@ -151,7 +151,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            return $order->load('items');
+            return $order->load(['items', 'payment']);
         });
     }
 

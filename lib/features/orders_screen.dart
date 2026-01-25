@@ -188,6 +188,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
                   ],
                 ],
               ),
+              if (order.paymentStatus != null || order.paymentMethod != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Pembayaran: ${order.paymentStatus ?? '-'}${order.paymentMethod != null ? ' (${order.paymentMethod})' : ''}',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
               const Divider(height: 24),
               ...order.items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
