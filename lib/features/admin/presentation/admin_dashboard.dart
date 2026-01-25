@@ -313,8 +313,14 @@ class AdminDashboard extends ConsumerWidget {
             return Card(
               child: ListTile(
                 title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${item.code} • ${item.type}'),
-                trailing: Text(item.isActive ? 'Aktif' : 'Nonaktif'),
+                subtitle: Text('${item.code} • ${item.type} • ${item.value.toStringAsFixed(0)}'),
+                trailing: Switch(
+                  value: item.isActive,
+                  onChanged: (val) async {
+                    await AdminRepository().updatePromotionActive(id: item.id, isActive: val);
+                    ref.invalidate(promotionsProvider);
+                  },
+                ),
               ),
             );
           },

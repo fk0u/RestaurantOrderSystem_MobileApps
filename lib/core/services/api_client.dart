@@ -50,4 +50,16 @@ class ApiClient {
     }
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) async {
+    final res = await http.put(
+      _uri(path),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('API error ${res.statusCode}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
 }

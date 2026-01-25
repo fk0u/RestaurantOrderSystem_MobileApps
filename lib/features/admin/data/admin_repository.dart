@@ -97,6 +97,24 @@ class AdminRepository {
     );
   }
 
+  Future<AdminPromotion> updatePromotionActive({
+    required String id,
+    required bool isActive,
+  }) async {
+    final map = await _api.put('/promotions/$id', {
+      'is_active': isActive,
+    });
+
+    return AdminPromotion(
+      id: map['id'].toString(),
+      code: map['code'] ?? '-',
+      title: map['title'] ?? '-',
+      type: map['type'] ?? 'fixed',
+      value: (map['value'] as num?)?.toDouble() ?? 0,
+      isActive: map['is_active'] == true,
+    );
+  }
+
   Future<List<AdminDailyStock>> getDailyStocks({String? date}) async {
     final data = await _api.getList('/reports/daily-stock', query: {
       if (date != null) 'date': date,
