@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../auth/presentation/auth_controller.dart';
 import 'table_controller.dart';
 import '../domain/table_entity.dart';
+import '../../reservations/data/reservation_repository.dart';
 
 class TableScreen extends ConsumerWidget {
   const TableScreen({super.key});
@@ -21,6 +22,10 @@ class TableScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.refresh(tableControllerProvider),
+          ),
+          IconButton(
+            icon: const Icon(Icons.event_seat),
+            onPressed: () => context.push('/reservations'),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -167,8 +172,8 @@ class TableScreen extends ConsumerWidget {
                    leading: const Icon(Icons.bookmark_border, color: Colors.orange),
                    title: const Text('Tandai Reservasi'),
                    onTap: () {
-                     ref.read(tableControllerProvider.notifier).updateStatus(table.id, 'reserved');
-                     context.pop();
+                    context.pop();
+                    _showReservationDialog(context, ref, table);
                    },
                  ),
                ] else ...[
@@ -194,5 +199,120 @@ class TableScreen extends ConsumerWidget {
          );
        }
      );
+  }
+
+  Future<void> _showReservationDialog(BuildContext context, WidgetRef ref, RestaurantTable table) async {
+    final partyController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Reservasi Meja ${table.number}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: partyController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Jumlah orang',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.date_range),
+                          label: Text('${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}'),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: ctx,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                              lastDate: DateTime.now().add(const Duration(days: 30)),
+                            );
+                            if (picked != null) {
+                              setModalState(() => selectedDate = picked);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.schedule),
+                          label: Text('${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}'),
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: ctx,
+                              initialTime: selectedTime,
+                            );
+                            if (picked != null) {
+                              setModalState(() => selectedTime = picked);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final partySize = int.tryParse(partyController.text.trim()) ?? 0;
+                            if (partySize <= 0) return;
+                            final reservedAt = DateTime(
+                              selectedDate.year,
+                              selectedDate.month,
+                              selectedDate.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            );
+                            await ReservationRepository().createReservation(
+                              tableId: table.id,
+                              partySize: partySize,
+                              reservedAt: reservedAt,
+                            );
+                            await ref.read(tableControllerProvider.notifier).updateStatus(table.id, 'reserved');
+                            if (context.mounted) Navigator.pop(ctx);
+                          },
+                          child: const Text('Simpan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

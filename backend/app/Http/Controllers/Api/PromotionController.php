@@ -8,9 +8,19 @@ use Illuminate\Http\Request;
 
 class PromotionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Promotion::orderByDesc('created_at')->get();
+        $query = Promotion::query();
+
+        if ($request->filled('code')) {
+            $query->where('code', $request->query('code'));
+        }
+
+        if ($request->filled('active')) {
+            $query->where('is_active', $request->boolean('active'));
+        }
+
+        return $query->orderByDesc('created_at')->get();
     }
 
     public function store(Request $request)

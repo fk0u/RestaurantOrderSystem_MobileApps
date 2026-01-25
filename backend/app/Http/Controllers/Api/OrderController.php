@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DailyStock;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Promotion;
 use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class OrderController extends Controller
             'table_id' => 'nullable|exists:restaurant_tables,id',
             'table_number' => 'nullable|string',
             'table_capacity' => 'nullable|integer',
+            'promo_code' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -74,7 +76,37 @@ class OrderController extends Controller
 
             $tax = $subtotal * 0.11;
             $service = $subtotal * 0.05;
-            $total = $subtotal + $tax + $service;
+            $discount = 0;
+
+            if (!empty($data['promo_code'])) {
+                $promo = Promotion::where('code', $data['promo_code'])
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($promo) {
+                    if ($promo->starts_at && now()->lt($promo->starts_at)) {
+                        abort(422, 'Promo belum berlaku');
+                    }
+                    if ($promo->ends_at && now()->gt($promo->ends_at)) {
+                        abort(422, 'Promo sudah berakhir');
+                    }
+                    if ($promo->min_order && $subtotal < $promo->min_order) {
+                        abort(422, 'Minimum order belum terpenuhi');
+                    }
+
+                    if ($promo->type === 'percent') {
+                        $discount = $subtotal * ($promo->value / 100);
+                    } else {
+                        $discount = $promo->value;
+                    }
+
+                    if ($promo->max_discount && $discount > $promo->max_discount) {
+                        $discount = $promo->max_discount;
+                    }
+                }
+            }
+
+            $total = max(0, $subtotal + $tax + $service - $discount);
 
             $order = Order::create([
                 'id' => $orderId,
@@ -85,9 +117,11 @@ class OrderController extends Controller
                 'table_capacity' => $data['table_capacity'] ?? null,
                 'queue_number' => $queueNumber,
                 'status' => 'Sedang Diproses',
+                'promo_code' => $data['promo_code'] ?? null,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
                 'service' => $service,
+                'discount' => $discount,
                 'total' => $total,
                 'ready_at' => now()->addMinutes(20),
             ]);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/design_system.dart';
 import 'auth/presentation/auth_controller.dart';
@@ -9,6 +10,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authControllerProvider).value;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -50,8 +52,11 @@ class ProfileScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: AppDimens.s13),
-                    const Text('Jane Doe', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    const Text('Member Gold', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    Text(user?.name ?? 'User', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      user?.role ?? 'customer',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
               ),
@@ -60,7 +65,12 @@ class ProfileScreen extends ConsumerWidget {
               _buildMenuTile(Icons.person_outline, 'Edit Profil', () {}),
               _buildMenuTile(Icons.wallet, 'Metode Pembayaran', () {}),
               _buildMenuTile(Icons.location_on_outlined, 'Alamat Tersimpan', () {}),
-              _buildMenuTile(Icons.notifications_outlined, 'Notifikasi', () {}, hasBadge: true),
+              _buildMenuTile(
+                Icons.notifications_outlined,
+                'Notifikasi',
+                () => context.push('/notifications'),
+                hasBadge: true,
+              ),
               _buildMenuTile(Icons.help_outline, 'Bantuan & Dukungan', () {}),
               
               const SizedBox(height: AppDimens.s21),

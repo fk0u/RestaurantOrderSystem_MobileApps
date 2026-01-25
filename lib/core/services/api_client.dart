@@ -19,6 +19,14 @@ class ApiClient {
     return jsonDecode(res.body) as List<dynamic>;
   }
 
+  Future<Map<String, dynamic>> getObject(String path, {Map<String, String>? query}) async {
+    final res = await http.get(_uri(path, query));
+    if (res.statusCode >= 400) {
+      throw Exception('API error ${res.statusCode}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
     final res = await http.post(
       _uri(path),

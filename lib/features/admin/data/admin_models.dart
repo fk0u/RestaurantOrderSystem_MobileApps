@@ -52,6 +52,7 @@ class AdminPromotion {
 
 class AdminDailyStock {
   final String id;
+  final String productId;
   final String productName;
   final int openingStock;
   final int closingStock;
@@ -60,10 +61,32 @@ class AdminDailyStock {
 
   AdminDailyStock({
     required this.id,
+    required this.productId,
     required this.productName,
     required this.openingStock,
     required this.closingStock,
     required this.sold,
     required this.adjusted,
+  });
+}
+
+class AdminSalesStatus {
+  final String status;
+  final int count;
+
+  AdminSalesStatus({required this.status, required this.count});
+}
+
+class AdminSalesReport {
+  final int orders;
+  final double revenue;
+  final double subtotal;
+  final List<AdminSalesStatus> byStatus;
+
+  AdminSalesReport({
+    required this.orders,
+    required this.revenue,
+    required this.subtotal,
+    required this.byStatus,
   });
 }

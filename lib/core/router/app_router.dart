@@ -15,6 +15,8 @@ import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/main_wrapper.dart';
 import '../../features/orders_screen.dart';
 import '../../features/profile_screen.dart';
+import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/reservations/presentation/reservations_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -121,6 +123,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(path: '/payment', builder: (context, state) => const PaymentScreen()),
+      GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
+      GoRoute(path: '/reservations', builder: (context, state) => const ReservationsScreen()),
       GoRoute(path: '/kitchen', builder: (context, state) => const KitchenDashboard()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminDashboard()),
       GoRoute(

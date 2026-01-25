@@ -20,6 +20,7 @@ class OrderRepository {
       'table_id': order.tableId,
       'table_number': order.tableNumber,
       'table_capacity': order.tableCapacity,
+      'promo_code': order.promoCode,
       'items': order.items.map((item) {
         return {
           'product_id': int.tryParse(item.product.id) ?? item.product.id,
@@ -54,6 +55,8 @@ class OrderRepository {
       userName: response['user']?['name'] ?? order.userName,
       totalPrice: (response['total'] as num?)?.toDouble() ?? order.totalPrice,
       status: response['status'] ?? order.status,
+      promoCode: response['promo_code'],
+      discount: (response['discount'] as num?)?.toDouble() ?? 0,
       timestamp: DateTime.tryParse(response['created_at'] ?? '') ?? DateTime.now(),
       orderType: response['order_type'] ?? order.orderType,
       tableId: response['table_id']?.toString(),
@@ -93,6 +96,8 @@ class OrderRepository {
         userName: map['user']?['name'] ?? 'Guest',
         totalPrice: (map['total'] as num?)?.toDouble() ?? 0,
         status: map['status'] ?? 'Sedang Diproses',
+        promoCode: map['promo_code'],
+        discount: (map['discount'] as num?)?.toDouble() ?? 0,
         timestamp: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
         orderType: map['order_type'] ?? 'takeaway',
         tableId: map['table_id']?.toString(),

@@ -48,6 +48,55 @@ class AdminRepository {
     }).toList();
   }
 
+  Future<AdminShift> createShift({
+    String? userId,
+    required String role,
+    required DateTime startsAt,
+    DateTime? endsAt,
+  }) async {
+    final map = await _api.post('/shifts', {
+      'user_id': userId,
+      'role': role,
+      'starts_at': startsAt.toIso8601String(),
+      'ends_at': endsAt?.toIso8601String(),
+      'status': 'active',
+    });
+
+    return AdminShift(
+      id: map['id'].toString(),
+      userName: map['user']?['name']?.toString(),
+      role: map['role']?.toString() ?? role,
+      startsAt: map['starts_at']?.toString() ?? startsAt.toIso8601String(),
+      endsAt: map['ends_at']?.toString(),
+      status: map['status'] ?? 'active',
+    );
+  }
+
+  Future<AdminPromotion> createPromotion({
+    required String code,
+    required String title,
+    required String type,
+    required double value,
+    bool isActive = true,
+  }) async {
+    final map = await _api.post('/promotions', {
+      'code': code,
+      'title': title,
+      'type': type,
+      'value': value,
+      'is_active': isActive,
+    });
+
+    return AdminPromotion(
+      id: map['id'].toString(),
+      code: map['code'] ?? code,
+      title: map['title'] ?? title,
+      type: map['type'] ?? type,
+      value: (map['value'] as num?)?.toDouble() ?? value,
+      isActive: map['is_active'] == true,
+    );
+  }
+
   Future<List<AdminDailyStock>> getDailyStocks({String? date}) async {
     final data = await _api.getList('/reports/daily-stock', query: {
       if (date != null) 'date': date,
@@ -56,6 +105,7 @@ class AdminRepository {
       final map = item as Map<String, dynamic>;
       return AdminDailyStock(
         id: map['id'].toString(),
+        productId: map['product_id']?.toString() ?? map['product']?['id']?.toString() ?? '',
         productName: map['product']?['name']?.toString() ?? '-',
         openingStock: (map['opening_stock'] as num?)?.toInt() ?? 0,
         closingStock: (map['closing_stock'] as num?)?.toInt() ?? 0,
@@ -63,5 +113,39 @@ class AdminRepository {
         adjusted: (map['adjusted'] as num?)?.toInt() ?? 0,
       );
     }).toList();
+  }
+
+  Future<AdminSalesReport> getSalesReport({DateTime? from, DateTime? to}) async {
+    final query = <String, String>{};
+    if (from != null) query['from'] = from.toIso8601String();
+    if (to != null) query['to'] = to.toIso8601String();
+
+    final data = await _api.getObject('/reports/sales', query: query.isEmpty ? null : query);
+    final summary = data['summary'] as Map<String, dynamic>? ?? {};
+    final byStatus = (data['by_status'] as List<dynamic>? ?? []).map((item) {
+      final s = item as Map<String, dynamic>;
+      return AdminSalesStatus(
+        status: s['status']?.toString() ?? '-',
+        count: (s['count'] as num?)?.toInt() ?? 0,
+      );
+    }).toList();
+
+    return AdminSalesReport(
+      orders: (summary['orders'] as num?)?.toInt() ?? 0,
+      revenue: (summary['revenue'] as num?)?.toDouble() ?? 0,
+      subtotal: (summary['subtotal'] as num?)?.toDouble() ?? 0,
+      byStatus: byStatus,
+    );
+  }
+
+  Future<void> adjustStock({
+    required String productId,
+    required int quantity,
+    String? reason,
+  }) async {
+    await _api.post('/stock/$productId/adjust', {
+      'quantity': quantity,
+      'reason': reason,
+    });
   }
 }

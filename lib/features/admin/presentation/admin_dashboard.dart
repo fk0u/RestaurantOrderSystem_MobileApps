@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../auth/presentation/auth_controller.dart';
 import 'admin_controller.dart';
 import '../data/admin_models.dart';
+import '../data/admin_repository.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -17,6 +18,7 @@ class AdminDashboard extends ConsumerWidget {
     final shiftsState = ref.watch(shiftsProvider);
     final promotionsState = ref.watch(promotionsProvider);
     final dailyStockState = ref.watch(dailyStockProvider);
+    final salesReportState = ref.watch(salesReportProvider);
 
     return DefaultTabController(
       length: 5,
@@ -57,35 +59,39 @@ class AdminDashboard extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (orders) {
-                final totalSales = orders.fold(0.0, (sum, order) => sum + order.total);
-
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              context,
-                              'Total Penjualan',
-                              currencyFormatter.format(totalSales),
-                              Icons.monetization_on,
-                              Colors.blue,
+                      _buildSalesFilter(context, ref),
+                      const SizedBox(height: 16),
+                      salesReportState.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (err, stack) => Text('Error: $err'),
+                        data: (report) => Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                context,
+                                'Total Penjualan',
+                                currencyFormatter.format(report.revenue),
+                                Icons.monetization_on,
+                                Colors.blue,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildStatCard(
-                              context,
-                              'Total Pesanan',
-                              orders.length.toString(),
-                              Icons.receipt_long,
-                              Colors.orange,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                context,
+                                'Total Pesanan',
+                                report.orders.toString(),
+                                Icons.receipt_long,
+                                Colors.orange,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 32),
                       const Text(
@@ -132,10 +138,10 @@ class AdminDashboard extends ConsumerWidget {
                 );
               },
             ),
-            _buildInventoryTab(dailyStockState),
+            _buildInventoryTab(context, ref, dailyStockState),
             _buildReservationsTab(reservationsState),
-            _buildShiftsTab(shiftsState),
-            _buildPromotionsTab(promotionsState),
+            _buildShiftsTab(context, ref, shiftsState),
+            _buildPromotionsTab(context, ref, promotionsState),
           ],
         ),
       ),
@@ -180,7 +186,7 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildInventoryTab(AsyncValue<List<AdminDailyStock>> state) {
+  Widget _buildInventoryTab(BuildContext context, WidgetRef ref, AsyncValue<List<AdminDailyStock>> state) {
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
@@ -197,7 +203,10 @@ class AdminDashboard extends ConsumerWidget {
               child: ListTile(
                 title: Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text('Opening ${item.openingStock} • Closing ${item.closingStock}'),
-                trailing: Text('Sold ${item.sold}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _showAdjustStockDialog(context, ref, item),
+                ),
               ),
             );
           },
@@ -231,8 +240,22 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildShiftsTab(AsyncValue<List<AdminShift>> state) {
-    return state.when(
+  Widget _buildShiftsTab(BuildContext context, WidgetRef ref, AsyncValue<List<AdminShift>> state) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showCreateShiftDialog(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Tambah Shift'),
+            ),
+          ),
+        ),
+        Expanded(
+          child: state.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (items) {
@@ -254,11 +277,28 @@ class AdminDashboard extends ConsumerWidget {
           },
         );
       },
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildPromotionsTab(AsyncValue<List<AdminPromotion>> state) {
-    return state.when(
+  Widget _buildPromotionsTab(BuildContext context, WidgetRef ref, AsyncValue<List<AdminPromotion>> state) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showCreatePromoDialog(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Tambah Promo'),
+            ),
+          ),
+        ),
+        Expanded(
+          child: state.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (items) {
@@ -278,6 +318,312 @@ class AdminDashboard extends ConsumerWidget {
               ),
             );
           },
+        );
+      },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showCreateShiftDialog(BuildContext context, WidgetRef ref) async {
+    final roleController = TextEditingController(text: 'cashier');
+    final userIdController = TextEditingController();
+    DateTime start = DateTime.now();
+    DateTime? end;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Tambah Shift', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: userIdController,
+                    decoration: const InputDecoration(labelText: 'User ID (opsional)', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: roleController,
+                    decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.schedule),
+                          label: Text('Mulai ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}'),
+                          onPressed: () async {
+                            final picked = await showTimePicker(context: ctx, initialTime: TimeOfDay.fromDateTime(start));
+                            if (picked != null) {
+                              setModalState(() {
+                                start = DateTime(start.year, start.month, start.day, picked.hour, picked.minute);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.schedule),
+                          label: Text('Selesai ${end == null ? '-' : '${end!.hour.toString().padLeft(2, '0')}:${end!.minute.toString().padLeft(2, '0')}'}'),
+                          onPressed: () async {
+                            final picked = await showTimePicker(context: ctx, initialTime: TimeOfDay.fromDateTime(end ?? DateTime.now()));
+                            if (picked != null) {
+                              setModalState(() {
+                                end = DateTime(start.year, start.month, start.day, picked.hour, picked.minute);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal'))),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await AdminRepository().createShift(
+                              userId: userIdController.text.trim().isEmpty ? null : userIdController.text.trim(),
+                              role: roleController.text.trim().isEmpty ? 'staff' : roleController.text.trim(),
+                              startsAt: start,
+                              endsAt: end,
+                            );
+                            ref.invalidate(shiftsProvider);
+                            if (context.mounted) Navigator.pop(ctx);
+                          },
+                          child: const Text('Simpan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showCreatePromoDialog(BuildContext context, WidgetRef ref) async {
+    final codeController = TextEditingController();
+    final titleController = TextEditingController();
+    final valueController = TextEditingController();
+    String type = 'percent';
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Tambah Promo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: codeController,
+                    decoration: const InputDecoration(labelText: 'Kode Promo', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Judul Promo', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: type,
+                    items: const [
+                      DropdownMenuItem(value: 'percent', child: Text('Percent')),
+                      DropdownMenuItem(value: 'fixed', child: Text('Fixed')),
+                    ],
+                    onChanged: (value) => setModalState(() => type = value ?? 'percent'),
+                    decoration: const InputDecoration(labelText: 'Tipe', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: valueController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Nilai', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal'))),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final value = double.tryParse(valueController.text.trim()) ?? 0;
+                            if (value <= 0) return;
+                            await AdminRepository().createPromotion(
+                              code: codeController.text.trim(),
+                              title: titleController.text.trim(),
+                              type: type,
+                              value: value,
+                            );
+                            ref.invalidate(promotionsProvider);
+                            if (context.mounted) Navigator.pop(ctx);
+                          },
+                          child: const Text('Simpan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSalesFilter(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              final now = DateTime.now();
+              ref.read(salesRangeProvider.notifier).state = DateTimeRange(
+                start: DateTime(now.year, now.month, now.day),
+                end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+              );
+              ref.invalidate(salesReportProvider);
+            },
+            child: const Text('Hari ini'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              final now = DateTime.now();
+              ref.read(salesRangeProvider.notifier).state = DateTimeRange(
+                start: now.subtract(const Duration(days: 7)),
+                end: now,
+              );
+              ref.invalidate(salesReportProvider);
+            },
+            child: const Text('7 Hari'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () async {
+              final picked = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) {
+                ref.read(salesRangeProvider.notifier).state = picked;
+                ref.invalidate(salesReportProvider);
+              }
+            },
+            child: const Text('Custom'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showAdjustStockDialog(BuildContext context, WidgetRef ref, AdminDailyStock item) async {
+    final qtyController = TextEditingController();
+    final reasonController = TextEditingController();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Adjust Stok - ${item.productName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: qtyController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah (+/-)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Alasan (opsional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal'))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final qty = int.tryParse(qtyController.text.trim()) ?? 0;
+                        if (qty == 0) return;
+                        await AdminRepository().adjustStock(
+                          productId: item.productId,
+                          quantity: qty,
+                          reason: reasonController.text.trim(),
+                        );
+                        ref.invalidate(dailyStockProvider);
+                        if (context.mounted) Navigator.pop(ctx);
+                      },
+                      child: const Text('Simpan'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );

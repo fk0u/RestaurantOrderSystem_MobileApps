@@ -6,6 +6,8 @@ class Order {
   final String userName;
   final double totalPrice;
   final String status;
+  final String? promoCode;
+  final double discount;
   final DateTime timestamp;
   final String orderType; // 'dine_in' or 'takeaway'
   final String? tableId;
@@ -21,6 +23,8 @@ class Order {
     required this.userName,
     required this.totalPrice,
     required this.status, // 'pending', 'processing', 'completed', 'cancelled'
+    this.promoCode,
+    this.discount = 0,
     required this.timestamp,
     required this.orderType,
     required this.queueNumber,
@@ -38,6 +42,8 @@ class Order {
       'userName': userName,
       'totalPrice': totalPrice,
       'status': status,
+      'promoCode': promoCode,
+      'discount': discount,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'orderType': orderType,
       'tableId': tableId,
@@ -55,6 +61,8 @@ class Order {
       userName: map['userName'],
       totalPrice: map['totalPrice'],
       status: map['status'],
+      promoCode: map['promoCode'],
+      discount: (map['discount'] as num?)?.toDouble() ?? 0,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
       orderType: map['orderType'] ?? 'takeaway',
       tableId: map['tableId'],

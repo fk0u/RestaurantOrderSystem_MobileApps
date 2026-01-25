@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../orders/data/order_repository.dart';
 import '../data/admin_repository.dart';
@@ -30,6 +31,13 @@ final promotionsProvider = FutureProvider<List<AdminPromotion>>((ref) {
 
 final dailyStockProvider = FutureProvider<List<AdminDailyStock>>((ref) {
   return AdminRepository().getDailyStocks();
+});
+
+final salesRangeProvider = StateProvider<DateTimeRange?>((ref) => null);
+
+final salesReportProvider = FutureProvider<AdminSalesReport>((ref) {
+  final range = ref.watch(salesRangeProvider);
+  return AdminRepository().getSalesReport(from: range?.start, to: range?.end);
 });
 
 class AdminController extends StateNotifier<AsyncValue<List<OrderSummary>>> {

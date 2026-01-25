@@ -11,6 +11,8 @@ import '../../orders/data/order_repository.dart';
 import '../../orders/domain/order_entity.dart';
 import '../../tables/data/table_repository.dart';
 import '../../tables/domain/table_entity.dart';
+import '../../promotions/data/promotion_repository.dart';
+import '../../promotions/data/promotion_model.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -22,6 +24,96 @@ class PaymentScreen extends ConsumerStatefulWidget {
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   String _selectedMethod = 'qris'; // 'qris' or 'cash'
   bool _isProcessing = false;
+  final TextEditingController _promoController = TextEditingController();
+  Promotion? _promo;
+  double _discountValue = 0;
+  String? _promoError;
+  bool _isApplyingPromo = false;
+
+  @override
+  void dispose() {
+    _promoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _applyPromo() async {
+    final code = _promoController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isApplyingPromo = true;
+      _promoError = null;
+    });
+
+    try {
+      final promo = await PromotionRepository().getByCode(code);
+      if (promo == null) {
+        setState(() {
+          _promoError = 'Kode promo tidak ditemukan';
+          _promo = null;
+          _discountValue = 0;
+        });
+        return;
+      }
+
+      final subtotal = ref.read(cartSubtotalProvider);
+      if (promo.minOrder > 0 && subtotal < promo.minOrder) {
+        setState(() {
+          _promoError = 'Minimum order belum terpenuhi';
+          _promo = null;
+          _discountValue = 0;
+        });
+        return;
+      }
+
+      final now = DateTime.now();
+      if (promo.startsAt != null && now.isBefore(promo.startsAt!)) {
+        setState(() {
+          _promoError = 'Promo belum berlaku';
+          _promo = null;
+          _discountValue = 0;
+        });
+        return;
+      }
+      if (promo.endsAt != null && now.isAfter(promo.endsAt!)) {
+        setState(() {
+          _promoError = 'Promo sudah berakhir';
+          _promo = null;
+          _discountValue = 0;
+        });
+        return;
+      }
+
+      double discount = 0;
+      if (promo.type == 'percent') {
+        discount = subtotal * (promo.value / 100);
+      } else {
+        discount = promo.value;
+      }
+      if (promo.maxDiscount != null && discount > promo.maxDiscount!) {
+        discount = promo.maxDiscount!;
+      }
+
+      setState(() {
+        _promo = promo;
+        _discountValue = discount;
+        _promoError = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isApplyingPromo = false);
+      }
+    }
+  }
+
+  void _clearPromo() {
+    setState(() {
+      _promo = null;
+      _discountValue = 0;
+      _promoError = null;
+      _promoController.clear();
+    });
+  }
 
   void _processPayment() async {
     final details = await _collectOrderDetails();
@@ -36,7 +128,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     final user = ref.read(authControllerProvider).value;
     final cartItems = ref.read(cartControllerProvider);
-    final total = ref.read(cartTotalProvider);
+    final subtotal = ref.read(cartSubtotalProvider);
+    final tax = ref.read(cartTaxProvider);
+    final service = ref.read(cartServiceFeeProvider);
+    final total = (subtotal + tax + service - _discountValue).clamp(0, double.infinity).toDouble();
     final orderId = 'ORD-${const Uuid().v4().substring(0, 8).toUpperCase()}';
 
     // Create Order Object
@@ -46,6 +141,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       userName: details.customerName,
       totalPrice: total,
       status: 'Sedang Diproses', // Initial Status
+      promoCode: _promo?.code,
+      discount: _discountValue,
       timestamp: DateTime.now(),
       orderType: details.orderType,
       tableId: details.table?.id,
@@ -265,6 +362,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                        _buildReceiptRow('Meja', order.tableNumber!),
                      if (order.orderType == 'dine_in' && order.tableCapacity != null)
                        _buildReceiptRow('Kapasitas', '${order.tableCapacity} orang'),
+                     if (order.promoCode != null)
+                       _buildReceiptRow('Promo', order.promoCode!),
+                     if (order.discount > 0)
+                       _buildReceiptRow('Diskon', '-${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(order.discount)}'),
                      _buildReceiptRow('No. Antrian', '#${order.queueNumber}'),
                      _buildReceiptRow(
                        'Perkiraan Siap',
@@ -318,7 +419,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = ref.watch(cartTotalProvider);
+    final subtotal = ref.watch(cartSubtotalProvider);
+    final tax = ref.watch(cartTaxProvider);
+    final service = ref.watch(cartServiceFeeProvider);
+    final total = (subtotal + tax + service - _discountValue).clamp(0, double.infinity).toDouble();
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     // Mock QRIS String
@@ -356,6 +460,59 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
              ),
              const SizedBox(height: 24),
 
+             // Promo Code
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: Colors.white,
+                 borderRadius: BorderRadius.circular(16),
+                 border: Border.all(color: Colors.grey.shade200),
+               ),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   const Text('Gunakan Promo', style: TextStyle(fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 12),
+                   Row(
+                     children: [
+                       Expanded(
+                         child: TextField(
+                           controller: _promoController,
+                           decoration: InputDecoration(
+                             hintText: 'Masukkan kode promo',
+                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                           ),
+                         ),
+                       ),
+                       const SizedBox(width: 12),
+                       ElevatedButton(
+                         onPressed: _isApplyingPromo ? null : _applyPromo,
+                         child: _isApplyingPromo
+                             ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                             : const Text('Pakai'),
+                       ),
+                     ],
+                   ),
+                   if (_promoError != null) ...[
+                     const SizedBox(height: 8),
+                     Text(_promoError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                   ],
+                   if (_promo != null) ...[
+                     const SizedBox(height: 8),
+                     Row(
+                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                       children: [
+                         Text('Promo: ${_promo!.title}', style: const TextStyle(fontSize: 12, color: Colors.green)),
+                         TextButton(onPressed: _clearPromo, child: const Text('Hapus')),
+                       ],
+                     ),
+                   ]
+                 ],
+               ),
+             ),
+
+             const SizedBox(height: 24),
+
              // Payment Breakdown
              Container(
                padding: const EdgeInsets.all(20),
@@ -366,9 +523,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                ),
                child: Column(
                   children: [
-                    _buildSummaryRow('Subtotal', ref.watch(cartSubtotalProvider), currencyFormatter),
-                    _buildSummaryRow('Pajak (11%)', ref.watch(cartTaxProvider), currencyFormatter),
-                    _buildSummaryRow('Service Charge (5%)', ref.watch(cartServiceFeeProvider), currencyFormatter),
+                    _buildSummaryRow('Subtotal', subtotal, currencyFormatter),
+                    _buildSummaryRow('Pajak (11%)', tax, currencyFormatter),
+                    _buildSummaryRow('Service Charge (5%)', service, currencyFormatter),
+                    if (_discountValue > 0)
+                      _buildSummaryRow('Diskon', -_discountValue, currencyFormatter),
                     const Divider(height: 24),
                     _buildSummaryRow('Total', total, currencyFormatter, isTotal: true),
                   ],
