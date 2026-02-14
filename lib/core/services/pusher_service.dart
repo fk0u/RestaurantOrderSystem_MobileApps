@@ -1,14 +1,21 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
 import '../constants/app_config.dart';
 import 'notification_service.dart';
 
 class PusherService {
-  static final PusherChannelsFlutter _pusher = PusherChannelsFlutter.getInstance();
+  static final PusherChannelsFlutter _pusher =
+      PusherChannelsFlutter.getInstance();
   static bool _initialized = false;
 
   static Future<void> init() async {
     if (_initialized) return;
+
+    if (kIsWeb) {
+      _initialized = true;
+      return;
+    }
 
     await _pusher.init(
       apiKey: AppConfig.pusherKey,
