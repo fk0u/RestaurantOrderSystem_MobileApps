@@ -43,6 +43,7 @@ Route::put('/reservations/{reservation}', [ReservationController::class, 'update
 Route::get('/shifts', [ShiftController::class, 'index']);
 Route::post('/shifts', [ShiftController::class, 'store']);
 Route::put('/shifts/{shift}', [ShiftController::class, 'update']);
+Route::patch('/shifts/{shift}/close', [ShiftController::class, 'close']);
 
 Route::get('/promotions', [PromotionController::class, 'index']);
 Route::post('/promotions', [PromotionController::class, 'store']);

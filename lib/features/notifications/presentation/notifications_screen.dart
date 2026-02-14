@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/theme/design_system.dart';
+import 'package:restaurant_order_system/core/theme/design_system.dart';
 import '../presentation/notifications_controller.dart';
 import '../data/notification_repository.dart';
 
@@ -16,7 +15,10 @@ class NotificationsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Notifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Notifikasi',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -44,22 +46,35 @@ class NotificationsScreen extends ConsumerWidget {
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: item.isRead ? Colors.white : AppColors.primary.withValues(alpha: 0.08),
+                  color: item.isRead
+                      ? Colors.white
+                      : AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppDimens.r16),
                   boxShadow: AppShadows.card,
                 ),
                 child: ListTile(
-                  title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    item.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.body),
                       const SizedBox(height: 4),
-                      Text(createdLabel, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(
+                        createdLabel,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ],
                   ),
                   trailing: IconButton(
-                    icon: Icon(item.isRead ? Icons.check : Icons.mark_email_read),
+                    icon: Icon(
+                      item.isRead ? Icons.check : Icons.mark_email_read,
+                    ),
                     onPressed: item.isRead
                         ? null
                         : () async {

@@ -41,6 +41,48 @@ class Order {
     this.items = const [],
   });
 
+  Order copyWith({
+    String? id,
+    String? userId,
+    String? userName,
+    double? totalPrice,
+    String? status,
+    String? promoCode,
+    double? discount,
+    DateTime? timestamp,
+    String? orderType,
+    int? queueNumber,
+    String? tableId,
+    String? tableNumber,
+    int? tableCapacity,
+    DateTime? readyAt,
+    String? paymentStatus,
+    String? paymentMethod,
+    DateTime? paidAt,
+    List<CartItem>? items,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      totalPrice: totalPrice ?? this.totalPrice,
+      status: status ?? this.status,
+      promoCode: promoCode ?? this.promoCode,
+      discount: discount ?? this.discount,
+      timestamp: timestamp ?? this.timestamp,
+      orderType: orderType ?? this.orderType,
+      queueNumber: queueNumber ?? this.queueNumber,
+      tableId: tableId ?? this.tableId,
+      tableNumber: tableNumber ?? this.tableNumber,
+      tableCapacity: tableCapacity ?? this.tableCapacity,
+      readyAt: readyAt ?? this.readyAt,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paidAt: paidAt ?? this.paidAt,
+      items: items ?? this.items,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -63,7 +105,10 @@ class Order {
     };
   }
 
-  factory Order.fromMap(Map<String, dynamic> map, {List<CartItem> items = const []}) {
+  factory Order.fromMap(
+    Map<String, dynamic> map, {
+    List<CartItem> items = const [],
+  }) {
     return Order(
       id: map['id'],
       userId: map['userId'],

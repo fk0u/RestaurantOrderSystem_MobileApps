@@ -8,17 +8,17 @@ import 'core/services/pusher_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final storageService = await StorageService.init();
   await NotificationService.init();
   await PusherService.init();
 
-  runApp(ProviderScope(
-    overrides: [
-      storageServiceProvider.overrideWithValue(storageService),
-    ],
-    child: const RestaurantApp(),
-  ));
+  runApp(
+    ProviderScope(
+      overrides: [storageServiceProvider.overrideWithValue(storageService)],
+      child: const RestaurantApp(),
+    ),
+  );
 }
 
 class RestaurantApp extends ConsumerWidget {
@@ -26,7 +26,7 @@ class RestaurantApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(goRouterProvider);
+    final router = appRouterProvider;
 
     return MaterialApp.router(
       title: 'Restaurant Order System',

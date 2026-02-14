@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/design_system.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../orders/domain/order_entity.dart';
 import 'kitchen_controller.dart';

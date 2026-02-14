@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/design_system.dart';
 import '../../auth/presentation/auth_controller.dart';
 import 'admin_controller.dart';
 import '../data/admin_models.dart';
@@ -13,7 +13,11 @@ class AdminDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminControllerProvider);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
     final reservationsState = ref.watch(reservationsProvider);
     final shiftsState = ref.watch(shiftsProvider);
     final promotionsState = ref.watch(promotionsProvider);
@@ -25,7 +29,10 @@ class AdminDashboard extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Dasbor Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            'Dasbor Admin',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           bottom: const TabBar(
             isScrollable: true,
             tabs: [
@@ -49,7 +56,8 @@ class AdminDashboard extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.logout),
-              onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+              onPressed: () =>
+                  ref.read(authControllerProvider.notifier).logout(),
             ),
           ],
         ),
@@ -96,7 +104,10 @@ class AdminDashboard extends ConsumerWidget {
                       const SizedBox(height: 32),
                       const Text(
                         'Riwayat Pesanan Terbaru',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       ListView.builder(
@@ -123,11 +134,19 @@ class AdminDashboard extends ConsumerWidget {
                                   color: AppColors.primary,
                                 ),
                               ),
-                              title: Text(order.orderId, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              title: Text(
+                                order.orderId,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               subtitle: Text('${order.date} • ${order.status}'),
                               trailing: Text(
                                 currencyFormatter.format(order.total),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
                           );
@@ -148,14 +167,24 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -170,23 +199,30 @@ class AdminDashboard extends ConsumerWidget {
             child: Icon(icon, color: color),
           ),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
-             value,
-             style: const TextStyle(
-               fontWeight: FontWeight.bold,
-               fontSize: 18,
-             ),
-             maxLines: 1,
-             overflow: TextOverflow.ellipsis,
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInventoryTab(BuildContext context, WidgetRef ref, AsyncValue<List<AdminDailyStock>> state) {
+  Widget _buildInventoryTab(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<AdminDailyStock>> state,
+  ) {
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
@@ -201,8 +237,13 @@ class AdminDashboard extends ConsumerWidget {
             final item = items[index];
             return Card(
               child: ListTile(
-                title: Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Opening ${item.openingStock} • Closing ${item.closingStock}'),
+                title: Text(
+                  item.productName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'Opening ${item.openingStock} • Closing ${item.closingStock}',
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () => _showAdjustStockDialog(context, ref, item),
@@ -230,7 +271,9 @@ class AdminDashboard extends ConsumerWidget {
             final item = items[index];
             return Card(
               child: ListTile(
-                title: Text('Meja ${item.tableNumber ?? '-'} • ${item.partySize} orang'),
+                title: Text(
+                  'Meja ${item.tableNumber ?? '-'} • ${item.partySize} orang',
+                ),
                 subtitle: Text('${item.reservedAt} • ${item.status}'),
               ),
             );
@@ -240,7 +283,11 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildShiftsTab(BuildContext context, WidgetRef ref, AsyncValue<List<AdminShift>> state) {
+  Widget _buildShiftsTab(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<AdminShift>> state,
+  ) {
     return Column(
       children: [
         Padding(
@@ -256,34 +303,48 @@ class AdminDashboard extends ConsumerWidget {
         ),
         Expanded(
           child: state.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
-      data: (items) {
-        if (items.isEmpty) {
-          return const Center(child: Text('Belum ada shift'));
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(24),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            return Card(
-              child: ListTile(
-                title: Text(item.userName ?? 'Staff'),
-                subtitle: Text('${item.role} • ${item.startsAt} - ${item.endsAt ?? '-'}'),
-                trailing: Text(item.status),
-              ),
-            );
-          },
-        );
-      },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
+            data: (items) {
+              if (items.isEmpty) {
+                return const Center(child: Text('Belum ada shift'));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.all(24),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return Card(
+                    child: ListTile(
+                      title: Text(item.userName ?? 'Staff'),
+                      subtitle: Text(
+                        '${item.role} • ${item.startsAt} - ${item.endsAt ?? '-'}',
+                      ),
+                      trailing: item.status == 'active'
+                          ? OutlinedButton(
+                              onPressed: () async {
+                                await AdminRepository().closeShift(item.id);
+                                ref.invalidate(shiftsProvider);
+                              },
+                              child: const Text('Tutup'),
+                            )
+                          : Text(item.status),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPromotionsTab(BuildContext context, WidgetRef ref, AsyncValue<List<AdminPromotion>> state) {
+  Widget _buildPromotionsTab(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<AdminPromotion>> state,
+  ) {
     return Column(
       children: [
         Padding(
@@ -299,40 +360,51 @@ class AdminDashboard extends ConsumerWidget {
         ),
         Expanded(
           child: state.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
-      data: (items) {
-        if (items.isEmpty) {
-          return const Center(child: Text('Belum ada promo'));
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(24),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            return Card(
-              child: ListTile(
-                title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${item.code} • ${item.type} • ${item.value.toStringAsFixed(0)}'),
-                trailing: Switch(
-                  value: item.isActive,
-                  onChanged: (val) async {
-                    await AdminRepository().updatePromotionActive(id: item.id, isActive: val);
-                    ref.invalidate(promotionsProvider);
-                  },
-                ),
-              ),
-            );
-          },
-        );
-      },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
+            data: (items) {
+              if (items.isEmpty) {
+                return const Center(child: Text('Belum ada promo'));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.all(24),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return Card(
+                    child: ListTile(
+                      title: Text(
+                        item.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${item.code} • ${item.type} • ${item.value.toStringAsFixed(0)}',
+                      ),
+                      trailing: Switch(
+                        value: item.isActive,
+                        onChanged: (val) async {
+                          await AdminRepository().updatePromotionActive(
+                            id: item.id,
+                            isActive: val,
+                          );
+                          ref.invalidate(promotionsProvider);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Future<void> _showCreateShiftDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showCreateShiftDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final roleController = TextEditingController(text: 'cashier');
     final userIdController = TextEditingController();
     DateTime start = DateTime.now();
@@ -341,7 +413,9 @@ class AdminDashboard extends ConsumerWidget {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
@@ -356,16 +430,25 @@ class AdminDashboard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Tambah Shift', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Tambah Shift',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: userIdController,
-                    decoration: const InputDecoration(labelText: 'User ID (opsional)', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'User ID (opsional)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: roleController,
-                    decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Role',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -373,12 +456,23 @@ class AdminDashboard extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.schedule),
-                          label: Text('Mulai ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}'),
+                          label: Text(
+                            'Mulai ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}',
+                          ),
                           onPressed: () async {
-                            final picked = await showTimePicker(context: ctx, initialTime: TimeOfDay.fromDateTime(start));
+                            final picked = await showTimePicker(
+                              context: ctx,
+                              initialTime: TimeOfDay.fromDateTime(start),
+                            );
                             if (picked != null) {
                               setModalState(() {
-                                start = DateTime(start.year, start.month, start.day, picked.hour, picked.minute);
+                                start = DateTime(
+                                  start.year,
+                                  start.month,
+                                  start.day,
+                                  picked.hour,
+                                  picked.minute,
+                                );
                               });
                             }
                           },
@@ -388,12 +482,25 @@ class AdminDashboard extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.schedule),
-                          label: Text('Selesai ${end == null ? '-' : '${end!.hour.toString().padLeft(2, '0')}:${end!.minute.toString().padLeft(2, '0')}'}'),
+                          label: Text(
+                            'Selesai ${end == null ? '-' : '${end!.hour.toString().padLeft(2, '0')}:${end!.minute.toString().padLeft(2, '0')}'}',
+                          ),
                           onPressed: () async {
-                            final picked = await showTimePicker(context: ctx, initialTime: TimeOfDay.fromDateTime(end ?? DateTime.now()));
+                            final picked = await showTimePicker(
+                              context: ctx,
+                              initialTime: TimeOfDay.fromDateTime(
+                                end ?? DateTime.now(),
+                              ),
+                            );
                             if (picked != null) {
                               setModalState(() {
-                                end = DateTime(start.year, start.month, start.day, picked.hour, picked.minute);
+                                end = DateTime(
+                                  start.year,
+                                  start.month,
+                                  start.day,
+                                  picked.hour,
+                                  picked.minute,
+                                );
                               });
                             }
                           },
@@ -404,14 +511,23 @@ class AdminDashboard extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal'))),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Batal'),
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
                             await AdminRepository().createShift(
-                              userId: userIdController.text.trim().isEmpty ? null : userIdController.text.trim(),
-                              role: roleController.text.trim().isEmpty ? 'staff' : roleController.text.trim(),
+                              userId: userIdController.text.trim().isEmpty
+                                  ? null
+                                  : userIdController.text.trim(),
+                              role: roleController.text.trim().isEmpty
+                                  ? 'staff'
+                                  : roleController.text.trim(),
                               startsAt: start,
                               endsAt: end,
                             );
@@ -432,7 +548,10 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showCreatePromoDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showCreatePromoDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final codeController = TextEditingController();
     final titleController = TextEditingController();
     final valueController = TextEditingController();
@@ -441,7 +560,9 @@ class AdminDashboard extends ConsumerWidget {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
@@ -456,42 +577,68 @@ class AdminDashboard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Tambah Promo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Tambah Promo',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: codeController,
-                    decoration: const InputDecoration(labelText: 'Kode Promo', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Kode Promo',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Judul Promo', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Judul Promo',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: type,
                     items: const [
-                      DropdownMenuItem(value: 'percent', child: Text('Percent')),
+                      DropdownMenuItem(
+                        value: 'percent',
+                        child: Text('Percent'),
+                      ),
                       DropdownMenuItem(value: 'fixed', child: Text('Fixed')),
                     ],
-                    onChanged: (value) => setModalState(() => type = value ?? 'percent'),
-                    decoration: const InputDecoration(labelText: 'Tipe', border: OutlineInputBorder()),
+                    onChanged: (value) =>
+                        setModalState(() => type = value ?? 'percent'),
+                    decoration: const InputDecoration(
+                      labelText: 'Tipe',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: valueController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Nilai', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Nilai',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal'))),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Batal'),
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            final value = double.tryParse(valueController.text.trim()) ?? 0;
+                            final value =
+                                double.tryParse(valueController.text.trim()) ??
+                                0;
                             if (value <= 0) return;
                             await AdminRepository().createPromotion(
                               code: codeController.text.trim(),
@@ -567,14 +714,20 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAdjustStockDialog(BuildContext context, WidgetRef ref, AdminDailyStock item) async {
+  Future<void> _showAdjustStockDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AdminDailyStock item,
+  ) async {
     final qtyController = TextEditingController();
     final reasonController = TextEditingController();
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -587,7 +740,13 @@ class AdminDashboard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Adjust Stok - ${item.productName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'Adjust Stok - ${item.productName}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: qtyController,
@@ -608,12 +767,18 @@ class AdminDashboard extends ConsumerWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal'))),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Batal'),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () async {
-                        final qty = int.tryParse(qtyController.text.trim()) ?? 0;
+                        final qty =
+                            int.tryParse(qtyController.text.trim()) ?? 0;
                         if (qty == 0) return;
                         await AdminRepository().adjustStock(
                           productId: item.productId,

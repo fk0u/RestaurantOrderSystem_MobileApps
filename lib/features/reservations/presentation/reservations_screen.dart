@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/theme/design_system.dart';
+import 'package:restaurant_order_system/core/theme/design_system.dart';
 import '../presentation/reservations_controller.dart';
 
 class ReservationsScreen extends ConsumerWidget {
@@ -14,7 +13,10 @@ class ReservationsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Reservasi', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Reservasi',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -48,11 +50,19 @@ class ReservationsScreen extends ConsumerWidget {
                       color: AppColors.surfaceLight,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.event_seat, color: AppColors.primary),
+                    child: const Icon(
+                      Icons.event_seat,
+                      color: AppColors.primary,
+                    ),
                   ),
                   title: Text('Meja ${item.tableNumber ?? '-'}'),
-                  subtitle: Text('${item.reservedAt} • ${item.partySize} orang'),
-                  trailing: Text(item.status, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    '${item.reservedAt} • ${item.partySize} orang',
+                  ),
+                  trailing: Text(
+                    item.status,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               );
             },

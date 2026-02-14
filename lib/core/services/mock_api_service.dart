@@ -13,9 +13,11 @@ class MockApiService {
       Product(
         id: '1',
         name: 'Burger Sapi Klasik',
-        description: 'Daging sapi premium dengan keju, selada, dan saus spesial.',
+        description:
+            'Daging sapi premium dengan keju, selada, dan saus spesial.',
         price: 45000,
-        imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=60',
+        imageUrl:
+            'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=60',
         category: 'makanan_utama',
         calories: 450,
       ),
@@ -24,7 +26,8 @@ class MockApiService {
         name: 'Ayam Goreng Krispi',
         description: 'Ayam goreng renyah dengan bumbu rahasia.',
         price: 35000,
-        imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=60',
+        imageUrl:
+            'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=60',
         category: 'makanan_utama',
         calories: 380,
       ),
@@ -33,7 +36,8 @@ class MockApiService {
         name: 'Pasta Carbonara',
         description: 'Pasta creamy dengan daging asap dan keju parmesan.',
         price: 55000,
-        imageUrl: 'https://images.unsplash.com/photo-1612874742237-98280d839bb4?auto=format&fit=crop&w=500&q=60',
+        imageUrl:
+            'https://images.unsplash.com/photo-1612874742237-98280d839bb4?auto=format&fit=crop&w=500&q=60',
         category: 'makanan_utama',
         calories: 520,
       ),
@@ -42,7 +46,8 @@ class MockApiService {
         name: 'Es Teh Lemon',
         description: 'Teh segar dengan perasan lemon asli.',
         price: 15000,
-        imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=60',
+        imageUrl:
+            'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=60',
         category: 'minuman',
         calories: 120,
       ),
@@ -51,7 +56,8 @@ class MockApiService {
         name: 'Kopi Susu Gula Aren',
         description: 'Kopi susu kekinian dengan gula aren.',
         price: 22000,
-        imageUrl: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=500&q=60',
+        imageUrl:
+            'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=500&q=60',
         category: 'minuman',
         calories: 180,
       ),
@@ -60,7 +66,8 @@ class MockApiService {
         name: 'Kentang Goreng',
         description: 'Kentang goreng renyah dengan taburan garam laut.',
         price: 20000,
-        imageUrl: 'https://images.unsplash.com/photo-1630384060421-2c084f2f45cc?auto=format&fit=crop&w=500&q=60',
+        imageUrl:
+            'https://images.unsplash.com/photo-1630384060421-2c084f2f45cc?auto=format&fit=crop&w=500&q=60',
         category: 'camilan',
         calories: 320,
       ),
@@ -70,11 +77,29 @@ class MockApiService {
   Future<User?> login(String username, String password) async {
     await Future.delayed(const Duration(seconds: 1));
     if (username == 'admin' && password == 'admin') {
-      return User(id: 'u1', name: 'Administrator', role: 'admin', token: 'mock-token-admin');
+      return User(
+        id: 'u1',
+        name: 'Administrator',
+        email: 'admin@example.com',
+        role: 'admin',
+        token: 'mock-token-admin',
+      );
     } else if (username == 'kitchen' && password == 'kitchen') {
-      return User(id: 'u2', name: 'Staff Dapur', role: 'kitchen', token: 'mock-token-kitchen');
+      return User(
+        id: 'u2',
+        name: 'Staff Dapur',
+        email: 'kitchen@example.com',
+        role: 'kitchen',
+        token: 'mock-token-kitchen',
+      );
     } else {
-      return User(id: 'u3', name: 'Pelanggan', role: 'customer', token: 'mock-token-user');
+      return User(
+        id: 'u3',
+        name: 'Pelanggan',
+        email: 'customer@example.com',
+        role: 'customer',
+        token: 'mock-token-user',
+      );
     }
   }
 }

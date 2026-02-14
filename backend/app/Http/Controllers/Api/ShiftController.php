@@ -38,4 +38,14 @@ class ShiftController extends Controller
         $shift->update($data);
         return $shift->refresh();
     }
+
+    public function close(Shift $shift)
+    {
+        $shift->update([
+            'status' => 'closed',
+            'ends_at' => $shift->ends_at ?? now(),
+        ]);
+
+        return $shift->refresh();
+    }
 }

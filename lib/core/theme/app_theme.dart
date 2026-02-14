@@ -1,98 +1,109 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../constants/app_colors.dart';
+import 'package:flutter/services.dart';
+import 'design_system.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
-      
-      // Color Scheme
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
         primary: AppColors.primary,
-        secondary: AppColors.accent,
+        secondary: AppColors.primaryDark,
         surface: AppColors.surface,
         error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: AppColors.textPrimary,
-      ),
-
-      // Text Theme
-      textTheme: GoogleFonts.outfitTextTheme(
-        ThemeData.light().textTheme,
-      ).apply(
-        bodyColor: AppColors.textPrimary,
-        displayColor: AppColors.textPrimary,
+        brightness: Brightness.light,
       ),
 
       // AppBar Theme
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.surface,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+        titleTextStyle: AppTypography.heading3,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
+
+      // Text Theme
+      textTheme: TextTheme(
+        displayLarge: AppTypography.heading1,
+        displayMedium: AppTypography.heading2,
+        displaySmall: AppTypography.heading3,
+        bodyLarge: AppTypography.bodyLarge,
+        bodyMedium: AppTypography.bodyMedium,
+        bodySmall: AppTypography.bodySmall,
+      ),
+
+      // Button Theme
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.s24,
+            vertical: AppDimens.s16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimens.r12),
+          ),
+          textStyle: AppTypography.button,
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.s24,
+            vertical: AppDimens.s16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimens.r12),
+          ),
+          textStyle: AppTypography.button.copyWith(color: AppColors.primary),
+        ),
+      ),
+
+      // Input Decoration
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceLight,
+        contentPadding: const EdgeInsets.all(AppDimens.s16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimens.r12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimens.r12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimens.r12),
+          borderSide: const BorderSide(color: AppColors.primary),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimens.r12),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textHint),
+        labelStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
         ),
       ),
 
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.surface,
-        elevation: 0, // Soft flat look
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.transparent),
+          borderRadius: BorderRadius.circular(AppDimens.r16),
         ),
         margin: EdgeInsets.zero,
-      ),
-      
-      // Button Themes
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-      ),
-
-      // Bottom Sheet
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.transparent,
-        modalBackgroundColor: Colors.transparent,
       ),
     );
   }

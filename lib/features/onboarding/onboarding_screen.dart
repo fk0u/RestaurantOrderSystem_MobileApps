@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_colors.dart';
+import 'package:restaurant_order_system/core/theme/design_system.dart';
 import '../../core/services/mock_api_service.dart';
 
 final mockApiProvider = Provider((ref) => MockApiService());
@@ -23,7 +23,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final tables = await ref.read(mockApiProvider).getTables();
       if (!mounted) return;
       setState(() => _isLoading = false);
-      
+
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -42,43 +42,66 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
                   'Pilih Meja',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Expanded(
                   child: GridView.builder(
                     controller: scrollController,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      childAspectRatio: 1.2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 1.2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
                     itemCount: tables.length,
                     itemBuilder: (context, index) {
                       final table = tables[index];
                       return InkWell(
                         onTap: () {
                           context.pop();
-                          context.go('/menu', extra: {'orderType': 'dine_in', 'table': table});
+                          context.go(
+                            '/menu',
+                            extra: {'orderType': 'dine_in', 'table': table},
+                          );
                         },
                         child: Container(
                           decoration: BoxDecoration(
                             color: AppColors.surfaceLight,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.table_restaurant, color: AppColors.primary),
+                              const Icon(
+                                Icons.table_restaurant,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(height: 8),
-                              Text(table, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text(
+                                table,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -140,8 +163,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onTap: _handleTakeAway,
               ),
               const Spacer(),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
+              if (_isLoading) const Center(child: CircularProgressIndicator()),
             ],
           ),
         ),
@@ -165,7 +187,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-             BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 5)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 5),
+            ),
           ],
         ),
         child: Row(
@@ -186,20 +212,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.textSecondary, size: 16),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.textSecondary,
+              size: 16,
+            ),
           ],
         ),
       ),

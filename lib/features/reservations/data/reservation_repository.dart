@@ -1,11 +1,13 @@
-import '../../../core/services/api_client.dart';
-import 'reservation_model.dart';
+import '../../../core/services/mock_service.dart';
+import '../../reservations/data/reservation_model.dart';
+// import '../../../core/services/api_client.dart';
 
 class ReservationRepository {
-  final ApiClient _api = ApiClient();
+  // final ApiClient _api = ApiClient();
+  final MockService _mockService = MockService();
 
   Future<List<Reservation>> getReservations() async {
-    final data = await _api.getList('/reservations');
+    final data = await _mockService.getReservations();
     return data.map((item) {
       final map = item as Map<String, dynamic>;
       return Reservation(
@@ -25,7 +27,7 @@ class ReservationRepository {
     required DateTime reservedAt,
     String? note,
   }) async {
-    final map = await _api.post('/reservations', {
+    final map = await _mockService.createReservation({
       'table_id': tableId,
       'party_size': partySize,
       'reserved_at': reservedAt.toIso8601String(),

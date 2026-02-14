@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/theme/design_system.dart';
+import 'package:restaurant_order_system/core/theme/design_system.dart';
 import 'auth/presentation/auth_controller.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -24,7 +23,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Stack(
                       children: [
-                         Container(
+                        Container(
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
@@ -36,26 +35,40 @@ class ProfileScreen extends ConsumerWidget {
                               fit: BoxFit.cover,
                             ),
                           ),
-                         ),
-                         Positioned(
-                           bottom: 0, right: 0,
-                           child: Container(
-                             padding: const EdgeInsets.all(8),
-                             decoration: BoxDecoration(
-                               color: AppColors.primary,
-                               shape: BoxShape.circle,
-                               border: Border.all(color: Colors.white, width: 2),
-                             ),
-                             child: const Icon(Icons.edit, color: Colors.white, size: 16),
-                           ),
-                         )
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppDimens.s13),
-                    Text(user?.name ?? 'User', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      user?.name ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Text(
                       user?.role ?? 'customer',
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -64,7 +77,11 @@ class ProfileScreen extends ConsumerWidget {
 
               _buildMenuTile(Icons.person_outline, 'Edit Profil', () {}),
               _buildMenuTile(Icons.wallet, 'Metode Pembayaran', () {}),
-              _buildMenuTile(Icons.location_on_outlined, 'Alamat Tersimpan', () {}),
+              _buildMenuTile(
+                Icons.location_on_outlined,
+                'Alamat Tersimpan',
+                () {},
+              ),
               _buildMenuTile(
                 Icons.notifications_outlined,
                 'Notifikasi',
@@ -72,16 +89,16 @@ class ProfileScreen extends ConsumerWidget {
                 hasBadge: true,
               ),
               _buildMenuTile(Icons.help_outline, 'Bantuan & Dukungan', () {}),
-              
+
               const SizedBox(height: AppDimens.s21),
-              
+
               _buildMenuTile(
-                Icons.logout, 
-                'Keluar', 
+                Icons.logout,
+                'Keluar',
                 () => ref.read(authControllerProvider.notifier).logout(),
-                isDestructive: true
+                isDestructive: true,
               ),
-              
+
               const SizedBox(height: 120),
             ],
           ),
@@ -90,7 +107,13 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false, bool hasBadge = false}) {
+  Widget _buildMenuTile(
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    bool isDestructive = false,
+    bool hasBadge = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppDimens.s13),
       decoration: BoxDecoration(
@@ -103,23 +126,35 @@ class ProfileScreen extends ConsumerWidget {
         leading: Container(
           padding: const EdgeInsets.all(AppDimens.s8),
           decoration: BoxDecoration(
-            color: isDestructive ? AppColors.error.withValues(alpha: 0.1) : AppColors.surfaceLight,
+            color: isDestructive
+                ? AppColors.error.withValues(alpha: 0.1)
+                : AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: isDestructive ? AppColors.error : AppColors.primary),
+          child: Icon(
+            icon,
+            color: isDestructive ? AppColors.error : AppColors.primary,
+          ),
         ),
         title: Text(
-          title, 
+          title,
           style: TextStyle(
-            fontWeight: FontWeight.bold, 
-            color: isDestructive ? AppColors.error : AppColors.textPrimary
-          )
+            fontWeight: FontWeight.bold,
+            color: isDestructive ? AppColors.error : AppColors.textPrimary,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (hasBadge)
-              Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
             if (hasBadge) const SizedBox(width: 8),
             const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           ],

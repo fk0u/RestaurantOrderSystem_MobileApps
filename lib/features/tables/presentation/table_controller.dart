@@ -2,9 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/table_repository.dart';
 import '../domain/table_entity.dart';
 
-final tableControllerProvider = StateNotifierProvider.autoDispose<TableController, AsyncValue<List<RestaurantTable>>>((ref) {
-  return TableController(ref.read(tableRepositoryProvider));
-});
+final tableControllerProvider =
+    StateNotifierProvider.autoDispose<
+      TableController,
+      AsyncValue<List<RestaurantTable>>
+    >((ref) {
+      return TableController(ref.read(tableRepositoryProvider));
+    });
 
 class TableController extends StateNotifier<AsyncValue<List<RestaurantTable>>> {
   final TableRepository _repository;
@@ -31,3 +35,6 @@ class TableController extends StateNotifier<AsyncValue<List<RestaurantTable>>> {
     }
   }
 }
+
+final selectedTableProvider = StateProvider<RestaurantTable?>((ref) => null);
+final selectedSeatCountProvider = StateProvider<int?>((ref) => null);

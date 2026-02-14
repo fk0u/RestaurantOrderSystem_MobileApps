@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:restaurant_order_system/core/theme/design_system.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -10,7 +10,8 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -23,13 +24,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
       duration: const Duration(seconds: 2),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
 
@@ -43,13 +46,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
   void _checkAuthAndNavigate() {
     // Check if user is already logged in (state from Riverpod)
     // The AppRouter redirect logic handles the actual routing security,
-    // so we can just ask to go to a protected route (like /login or /menu) 
+    // so we can just ask to go to a protected route (like /login or /menu)
     // and let the router decide.
     // However, to be explicit:
-    
+
     // We just trigger a navigation. The AppRouter's redirect will pick it up.
     // Navigating to /login is safe; if logged in, it redirects to /menu.
-    context.go('/login'); 
+    context.go('/login');
   }
 
   @override
@@ -104,10 +107,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                 const SizedBox(height: 8),
                 Text(
                   'Pesan Makanan Lebih Mudah',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
               ],
             ),

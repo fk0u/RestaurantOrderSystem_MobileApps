@@ -72,6 +72,18 @@ class AdminRepository {
     );
   }
 
+  Future<AdminShift> closeShift(String id) async {
+    final map = await _api.patch('/shifts/$id/close', {});
+    return AdminShift(
+      id: map['id'].toString(),
+      userName: map['user']?['name']?.toString(),
+      role: map['role']?.toString() ?? '-',
+      startsAt: map['starts_at']?.toString() ?? '-',
+      endsAt: map['ends_at']?.toString(),
+      status: map['status'] ?? 'closed',
+    );
+  }
+
   Future<AdminPromotion> createPromotion({
     required String code,
     required String title,
