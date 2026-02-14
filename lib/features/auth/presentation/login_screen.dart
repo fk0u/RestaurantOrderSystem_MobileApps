@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_controller.dart';
+import '../../../../core/input/toaster.dart';
 import '../../../../core/theme/design_system.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
+  // Trigger reload
   const LoginScreen({super.key});
 
   @override
@@ -41,11 +43,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             .read(authControllerProvider.notifier)
             .login(_emailController.text, _passwordController.text);
       } else {
-        // Register (Mock)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrasi Berhasil! Silakan Login.')),
-        );
-        _tabController.animateTo(0);
+        // Register
+        ref
+            .read(authControllerProvider.notifier)
+            .register(
+              _nameController.text,
+              _emailController.text,
+              _passwordController.text,
+            );
       }
     }
   }
@@ -57,11 +62,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     // Listen to errors
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.error,
-          ),
+        Toaster.showError(
+          context,
+          next.error.toString().replaceAll('Exception: ', ''),
         );
       }
     });

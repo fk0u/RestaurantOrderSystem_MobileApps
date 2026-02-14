@@ -13,6 +13,8 @@ import '../../tables/data/table_repository.dart';
 import '../../tables/domain/table_entity.dart';
 import '../../promotions/data/promotion_repository.dart';
 import '../../promotions/data/promotion_model.dart';
+import '../../orders/presentation/order_type_provider.dart';
+import '../../tables/presentation/table_controller.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -192,8 +194,19 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Future<_OrderDetails?> _collectOrderDetails() async {
     final user = ref.read(authControllerProvider).value;
     final nameController = TextEditingController(text: user?.name ?? '');
-    String orderType = 'dine_in';
-    RestaurantTable? selectedTable;
+
+    // Pre-fill from providers
+    final initialOrderType = ref.read(orderTypeProvider);
+    String orderType = initialOrderType.value; // 'dine_in', 'takeaway', etc.
+
+    final initialTable = ref.read(selectedTableProvider);
+    RestaurantTable? selectedTable = initialTable;
+
+    // Reset table if not dine_in
+    if (initialOrderType != OrderType.dineIn) {
+      selectedTable = null;
+    }
+
     final tablesFuture = ref.read(tableRepositoryProvider).getTables();
 
     return showModalBottomSheet<_OrderDetails>(
@@ -208,7 +221,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           builder: (context, setModalState) {
             final isNameValid = nameController.text.trim().isNotEmpty;
             final isTableValid =
-                orderType == 'takeaway' || selectedTable != null;
+                orderType == 'takeaway' ||
+                orderType == 'delivery' ||
+                selectedTable !=
+                    null; // delivery treated as takeaway logic for now
+            // Or if delivery, we might need address. For now treat as 'takeaway' (no table)
+
             final canSubmit = isNameValid && isTableValid;
 
             return Padding(
@@ -243,7 +261,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   RadioListTile<String>(
                     value: 'dine_in',
                     groupValue: orderType,
-                    title: const Text('Dine In'),
+                    title: const Text('Makan di Tempat'),
                     onChanged: (value) {
                       setModalState(() {
                         orderType = value!;
@@ -253,7 +271,18 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   RadioListTile<String>(
                     value: 'takeaway',
                     groupValue: orderType,
-                    title: const Text('Takeaway'),
+                    title: const Text('Bawa Pulang'),
+                    onChanged: (value) {
+                      setModalState(() {
+                        orderType = value!;
+                        selectedTable = null;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    value: 'delivery',
+                    groupValue: orderType,
+                    title: const Text('Delivery'),
                     onChanged: (value) {
                       setModalState(() {
                         orderType = value!;

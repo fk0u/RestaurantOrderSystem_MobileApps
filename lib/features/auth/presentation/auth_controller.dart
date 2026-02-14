@@ -3,9 +3,10 @@ import '../domain/user_entity.dart';
 import '../data/auth_repository.dart';
 
 // State is nullable User. If null, not logged in.
-final authControllerProvider = StateNotifierProvider<AuthController, AsyncValue<User?>>((ref) {
-  return AuthController(ref.read(authRepositoryProvider));
-});
+final authControllerProvider =
+    StateNotifierProvider<AuthController, AsyncValue<User?>>((ref) {
+      return AuthController(ref.read(authRepositoryProvider));
+    });
 
 class AuthController extends StateNotifier<AsyncValue<User?>> {
   final AuthRepository _repository;
@@ -28,6 +29,16 @@ class AuthController extends StateNotifier<AsyncValue<User?>> {
     state = const AsyncValue.loading();
     try {
       final user = await _repository.login(username, password);
+      state = AsyncValue.data(user);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> register(String name, String email, String password) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await _repository.register(name, email, password);
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

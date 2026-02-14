@@ -29,7 +29,23 @@ class MenuScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: cartItems.isNotEmpty
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 100),
+              child: FloatingActionButton.extended(
+                onPressed: () => context.push('/cart'),
+                backgroundColor: AppColors.primary,
+                icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                label: Text(
+                  '${cartItems.length} Item | ${_formatCurrency(cartItems.fold(0, (sum, item) => sum + (item.product.price * item.quantity)))}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: SafeArea(
+        bottom: false, // Allow content to go behind dock
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -116,7 +132,10 @@ class MenuScreen extends ConsumerWidget {
 
             // Search Bar (Mock)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 8.0,
+              ),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Cari makanan atau minuman...',
@@ -138,7 +157,7 @@ class MenuScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Categories
             SingleChildScrollView(
@@ -172,7 +191,7 @@ class MenuScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Product Sections
             Expanded(
@@ -184,12 +203,12 @@ class MenuScreen extends ConsumerWidget {
                   if (products.isEmpty) {
                     return const Center(child: Text('Tidak ada menu tersedia'));
                   }
-                  final inCartIds = cartItems.map((e) => e.product.id).toSet();
+                  // final inCartIds = cartItems.map((e) => e.product.id).toSet(); // Removed
                   final availableProducts = products
-                      .where((p) => p.stock > 0 && !inCartIds.contains(p.id))
+                      .where((p) => p.stock > 0)
                       .toList();
                   final unavailableProducts = products
-                      .where((p) => p.stock <= 0 || inCartIds.contains(p.id))
+                      .where((p) => p.stock <= 0)
                       .toList();
 
                   return ListView(
@@ -201,7 +220,7 @@ class MenuScreen extends ConsumerWidget {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              childAspectRatio: 0.7,
+                              childAspectRatio: 0.6,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
                             ),
@@ -389,6 +408,9 @@ class MenuScreen extends ConsumerWidget {
                                                               qty + 1,
                                                             ),
                                                         Icons.add,
+                                                        isDisabled:
+                                                            qty >=
+                                                            product.stock,
                                                       ),
                                                     ],
                                                   )
@@ -493,6 +515,14 @@ class MenuScreen extends ConsumerWidget {
     );
   }
 
+  String _formatCurrency(num value) {
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(value);
+  }
+
   Future<void> _showTablePicker(BuildContext context, WidgetRef ref) async {
     final tablesFuture = ref.read(tableRepositoryProvider).getTables();
     RestaurantTable? selectedTable = ref.read(selectedTableProvider);
@@ -503,6 +533,7 @@ class MenuScreen extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -522,7 +553,10 @@ class MenuScreen extends ConsumerWidget {
                 left: 24,
                 right: 24,
                 top: 24,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                bottom:
+                    MediaQuery.of(ctx).viewInsets.bottom +
+                    MediaQuery.of(ctx).padding.bottom +
+                    24,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -552,7 +586,9 @@ class MenuScreen extends ConsumerWidget {
                       }
 
                       return DropdownButtonFormField<RestaurantTable>(
-                        value: selectedTable,
+                        value: availableTables
+                            .where((t) => t.id == selectedTable?.id)
+                            .firstOrNull,
                         items: availableTables
                             .map(
                               (t) => DropdownMenuItem(
@@ -796,16 +832,24 @@ class MenuScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQtyBtn(VoidCallback onTap, IconData icon) {
+  Widget _buildQtyBtn(
+    VoidCallback onTap,
+    IconData icon, {
+    bool isDisabled = false,
+  }) {
     return InkWell(
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
+          color: isDisabled ? Colors.grey[200] : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 16, color: AppColors.primary),
+        child: Icon(
+          icon,
+          size: 16,
+          color: isDisabled ? Colors.grey : AppColors.primary,
+        ),
       ),
     );
   }

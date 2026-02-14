@@ -1,30 +1,124 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/product_entity.dart';
-import '../../../core/services/mock_service.dart';
-// import '../../../core/services/api_client.dart';
+
+import '../../../../core/network/api_client.dart';
 
 final menuRepositoryProvider = Provider<MenuRepository>((ref) {
-  return MenuRepository();
+  return MenuRepository(ApiClient());
 });
 
 class MenuRepository {
-  // final ApiClient _api;
-  final MockService _mockService = MockService();
+  final ApiClient _apiClient;
 
-  MenuRepository();
+  MenuRepository(this._apiClient);
 
   Future<List<Product>> getProducts() async {
-    // final data = await _api.getList('/products');
-    return _mockService.getProducts();
+    try {
+      final response = await _apiClient.get('/products');
+      return (response as List).map((e) => Product.fromJson(e)).toList();
+    } catch (e) {
+      throw Exception('Failed to load products: $e');
+    }
   }
 
-  // Optional: Add Search
+  // --- Products CRUD ---
+
+  Future<void> createProduct(Product product) async {
+    try {
+      await _apiClient.post(
+        '/products',
+        body: {
+          'name': product.name,
+          'price': product.price,
+          'imageUrl': product.imageUrl,
+          'categoryId': product.categoryId,
+          'description': product.description,
+          'stock': product.stock,
+          'isAvailable': product.isAvailable,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to create product: $e');
+    }
+  }
+
+  Future<void> updateProduct(Product product) async {
+    try {
+      await _apiClient.put(
+        '/products/${product.id}',
+        body: {
+          'name': product.name,
+          'price': product.price,
+          'imageUrl': product.imageUrl,
+          'categoryId': product.categoryId,
+          'description': product.description,
+          'stock': product.stock,
+          'isAvailable': product.isAvailable,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to update product: $e');
+    }
+  }
+
+  Future<void> deleteProduct(String id) async {
+    try {
+      await _apiClient.delete('/products/$id');
+    } catch (e) {
+      throw Exception('Failed to delete product: $e');
+    }
+  }
+
+  // --- Categories CRUD ---
+
+  Future<List<Map<String, dynamic>>> getCategories() async {
+    try {
+      final response = await _apiClient.get('/categories');
+      return (response as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      throw Exception('Failed to load categories: $e');
+    }
+  }
+
+  Future<void> createCategory(String name, String description) async {
+    try {
+      await _apiClient.post(
+        '/categories',
+        body: {'name': name, 'description': description},
+      );
+    } catch (e) {
+      throw Exception('Failed to create category: $e');
+    }
+  }
+
+  Future<void> updateCategory(int id, String name, String description) async {
+    try {
+      await _apiClient.put(
+        '/categories/$id',
+        body: {'name': name, 'description': description},
+      );
+    } catch (e) {
+      throw Exception('Failed to update category: $e');
+    }
+  }
+
+  Future<void> deleteCategory(int id) async {
+    try {
+      await _apiClient.delete('/categories/$id');
+    } catch (e) {
+      throw Exception('Failed to delete category: $e');
+    }
+  }
+
+  // Optional: Add Search (Client-side filtering for now)
   Future<List<Product>> searchProducts(String query) async {
     final products = await getProducts();
-    return products.where((p) {
-      final q = query.toLowerCase();
-      return p.name.toLowerCase().contains(q) ||
-          p.category.toLowerCase().contains(q);
+    return products.where((product) {
+      final nameLower = product.name.toLowerCase();
+      final categoryLower = product.category.toLowerCase();
+      final searchLower = query.toLowerCase();
+      return nameLower.contains(searchLower) ||
+          categoryLower.contains(searchLower);
     }).toList();
   }
 }

@@ -6,6 +6,7 @@ import '../../auth/presentation/auth_controller.dart';
 import 'table_controller.dart';
 import '../domain/table_entity.dart';
 import '../../reservations/data/reservation_repository.dart';
+import '../../orders/presentation/order_type_provider.dart';
 
 class TableScreen extends ConsumerWidget {
   const TableScreen({super.key});
@@ -46,7 +47,7 @@ class TableScreen extends ConsumerWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 24,
               mainAxisSpacing: 24,
-              childAspectRatio: 1.2,
+              childAspectRatio: 0.8,
             ),
             itemCount: tables.length,
             itemBuilder: (context, index) {
@@ -163,7 +164,12 @@ class TableScreen extends ConsumerWidget {
       ),
       builder: (ctx) {
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).padding.bottom + 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -214,6 +220,8 @@ class TableScreen extends ConsumerWidget {
                     context.go('/menu'); // Go to menu to create order
                     // Optionally set selected table in a provider here
                     ref.read(selectedTableProvider.notifier).state = table;
+                    ref.read(orderTypeProvider.notifier).state =
+                        OrderType.dineIn;
                   },
                 ),
                 ListTile(

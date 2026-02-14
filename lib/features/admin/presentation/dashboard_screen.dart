@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../auth/presentation/auth_controller.dart';
 import 'dashboard_controller.dart';
+import 'widgets/admin_drawer.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -15,6 +16,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         actions: [

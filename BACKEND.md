@@ -1,107 +1,154 @@
 # Backend API Documentation
 
-The `RestaurantOrderSystem_MobileApps` is designed to interact with a RESTful backend API. Currently, the application uses a `MockService` for development and testing, but the architecture is set up to communicate with a Laravel-based backend.
+The `RestaurantOrderSystem_MobileApps` backend is built with **Node.js** and **Express**, using **MySQL** as the database.
 
 ## Base URL
-- **Development (Android Emulator)**: `http://10.0.2.2:8000/api`
-- **Development (Web/iOS)**: `http://127.0.0.1:8000/api`
-- **Production**: `https://api.your-production-domain.com/api`
+*   **Local Development**: `http://localhost:3000` (or your machine's IP address, e.g., `http://10.0.2.2:3000` for Android Emulator).
 
-## Authentication
+## Headers
+*   `Content-Type: application/json`
+*   `Authorization`: `Bearer <token>` (for protected routes - *Note: Basic token implementation for prototype*)
+
+---
+
+## 🔐 Authentication
 
 ### Login
-- **Endpoint**: `POST /auth/login`
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "secret_password"
-  }
-  ```
-- **Response (Success - 200 OK)**:
-  ```json
-  {
-    "token": "eyJhbGciOiJIUzI1Ni...",
-    "user": {
-      "id": 1,
-      "name": "John Doe",
-      "email": "user@example.com",
-      "role": "staff" // or 'admin', 'customer'
+*   **Endpoint**: `POST /api/auth/login`
+*   **Body**:
+    ```json
+    {
+      "email": "user@resto.com",
+      "password": "password"
     }
-  }
-  ```
+    ```
+*   **Response**: Returns user object and token.
 
-### Logout
-- **Endpoint**: `POST /auth/logout`
-- **Headers**: `Authorization: Bearer <token>`
+### Register
+*   **Endpoint**: `POST /api/auth/register`
+*   **Body**:
+    ```json
+    {
+      "name": "New User",
+      "email": "new@resto.com",
+      "password": "password"
+    }
+    ```
 
-## Tables
+---
+
+## 🍔 Products & Menu
+
+### Get All Products
+*   **Endpoint**: `GET /api/products`
+*   **Response**: List of products with category names.
+
+### Create Product
+*   **Endpoint**: `POST /api/products`
+*   **Body**:
+    ```json
+    {
+      "name": "Nasi Goreng",
+      "price": 25000,
+      "imageUrl": "http://...",
+      "categoryId": 1,
+      "description": "Tasty fried rice",
+      "stock": 100,
+      "isAvailable": true
+    }
+    ```
+
+### Update Product
+*   **Endpoint**: `PUT /api/products/:id`
+
+### Delete Product
+*   **Endpoint**: `DELETE /api/products/:id`
+
+---
+
+## 📂 Categories
+
+### Get Categories
+*   **Endpoint**: `GET /api/categories`
+
+### Create Category
+*   **Endpoint**: `POST /api/categories`
+*   **Body**: `{ "name": "Food", "description": "Main dishes" }`
+
+### Update Category
+*   **Endpoint**: `PUT /api/categories/:id`
+
+### Delete Category
+*   **Endpoint**: `DELETE /api/categories/:id`
+
+---
+
+## 🪑 Tables
 
 ### Get All Tables
-- **Endpoint**: `GET /tables`
-- **Response**: Array of table objects.
+*   **Endpoint**: `GET /api/tables`
 
 ### Update Table Status
-- **Endpoint**: `PUT /tables/{id}`
-- **Request Body**:
-  ```json
-  {
-    "status": "occupied" // 'available', 'reserved', 'occupied'
-  }
-  ```
+*   **Endpoint**: `PUT /api/tables/:id`
+*   **Body**: `{ "status": "occupied" }`
+    *   *Status options*: `available`, `occupied`, `reserved`
 
-## Menu (Products)
+---
 
-### Get Products
-- **Endpoint**: `GET /products`
-- **Query Parameters**: `category` (optional)
-- **Response**: Array of product objects.
+## 🧾 Orders
 
-## Orders
+### Get All Orders
+*   **Endpoint**: `GET /api/orders`
+*   **Response**: List of orders, including their items and modifiers.
+
+### Get Next Queue Number
+*   **Endpoint**: `GET /api/orders/queue`
 
 ### Create Order
-- **Endpoint**: `POST /orders`
-- **Request Body**:
-  ```json
-  {
-    "table_id": "table_1",
-    "items": [
-      {
-        "product_id": "p1",
-        "quantity": 2,
-        "note": "No spicy"
-      }
-    ]
-  }
-  ```
-
-### Get Orders
-- **Endpoint**: `GET /orders`
-- **Query Parameters**: `status` (optional), `date` (optional)
+*   **Endpoint**: `POST /api/orders`
+*   **Body**:
+    ```json
+    {
+      "id": "order-uuid",
+      "userId": 1,
+      "userName": "Customer Name",
+      "totalPrice": 50000,
+      "status": "pending",
+      "orderType": "dine_in",
+      "queueNumber": 12,
+      "tableId": "table_app_id",
+      "items": [
+        {
+          "productId": 1,
+          "quantity": 2,
+          "note": "Spicy",
+          "modifiers": []
+        }
+      ],
+      "paymentMethod": "cash"
+    }
+    ```
+*   **Logic**: Checks stock availability before creating order. Deducts stock upon success.
 
 ### Update Order Status
-- **Endpoint**: `PATCH /orders/{id}/status`
-- **Request Body**:
-  ```json
-  {
-    "status": "Sedang Dimasak" // 'Sedang Diproses', 'Siap Saji', 'Selesai'
-  }
-  ```
+*   **Endpoint**: `PATCH /api/orders/:id/status`
+*   **Body**: `{ "status": "cooking" }`
 
 ### Process Payment
-- **Endpoint**: `POST /orders/{id}/payment`
-- **Request Body**:
-  ```json
-  {
-    "method": "qris", // 'cash', 'qris'
-    "amount": 50000
-  }
-  ```
+*   **Endpoint**: `POST /api/orders/:id/payment`
+*   **Body**: `{ "method": "cash", "amount": 50000 }`
 
-## WebSocket (Real-time Updates)
-The app is configured to use Pusher Channels for real-time updates (e.g., new orders in kitchen).
-- **Cluster**: `mt1` (configurable in `AppConfig`)
-- **Channel**: `orders`
-- **Events**:
-  - `order.created`: New order placed.
-  - `order.updated`: Order status changed.
+---
+
+## 📊 Dashboard
+
+### Get Sales Stats
+*   **Endpoint**: `GET /api/sales/stats`
+*   **Response**:
+    ```json
+    {
+      "count": 150,
+      "revenue": 5000000,
+      "active_orders": 5
+    }
+    ```
