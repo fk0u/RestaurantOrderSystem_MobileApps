@@ -60,6 +60,9 @@ class OrderRepository {
           'queueNumber': order.queueNumber,
           'tableId': order.tableId,
           'items': itemsJson,
+          // Add tax and subtotal
+          'subtotal': order.subtotal,
+          'tax': order.tax,
         },
       );
 
@@ -82,13 +85,6 @@ class OrderRepository {
         // Items are nested
         final itemsJson = (map['items'] as List?) ?? [];
         final items = itemsJson.map((itemMap) {
-          // modifiers need to be parsed if string, but my API returns object (JSON.parse done by mysql2 or manual)
-          // In index.js I manually parsed modifiers to JSON.
-          // Wait, index.js sends `JSON.stringify(item.modifiers)` in INSERT, but `SELECT` uses default mysql2 which returns string for JSON column?
-          // I updated index.js: `modifiers: item.modifiers // JSON already parsed by mysql2 if configured? verify`
-          // Actually mysql2 returns JSON columns as objects usually.
-          // Let's assume it returns List or we handle String.
-
           List<String> modifiers = [];
           if (itemMap['modifiers'] != null) {
             if (itemMap['modifiers'] is String) {
@@ -107,13 +103,13 @@ class OrderRepository {
             id: const Uuid().v4(), // Generated for display/reorder purposes
             product: Product(
               id: itemMap['productId'].toString(),
-              name: itemMap['name'] ?? '',
-              price: (itemMap['price'] as num).toDouble(),
+              name: itemMap['productName'] ?? itemMap['name'] ?? '',
+              price: _parseDouble(itemMap['price']),
               imageUrl: '',
               category: '',
               description: '',
             ),
-            quantity: itemMap['quantity'] as int,
+            quantity: _parseInt(itemMap['quantity']),
             note: itemMap['note'] as String?,
             modifiers: modifiers,
           );
@@ -123,19 +119,13 @@ class OrderRepository {
           id: map['app_id'] as String? ?? map['id'].toString(),
           userId: (map['userId'] ?? '').toString(),
           userName: map['guestName'] ?? map['userName'] ?? 'Guest',
-          totalPrice: (map['totalPrice'] as num).toDouble(),
+          totalPrice: _parseDouble(map['totalPrice']),
           status: map['status'] ?? 'pending',
+          subtotal: _parseDouble(map['subtotal']),
+          tax: _parseDouble(map['tax']),
           orderType: map['orderType'] ?? 'dine_in',
-          queueNumber: map['queueNumber'] as int? ?? 0,
-          tableId: (map['tableId'] != null)
-              ? map['tableId'].toString()
-              : null, // This might be int ID from DB, need to map back to app_id?
-          // Backend doesn't join table to get app_id. It returns tableId as int FK.
-          // This is a disconnect. Frontend expects 'table_1'. Backend returns 1.
-          // For now, let's just convert to string. Ideally backend should join.
-          // Or I update backend to return app_id of table.
-          // I will update backend index.js to JOIN table or I accept ID mismatch for now.
-          // Let's accept ID mismatch or 'table_1' if map['tableId'] is simple.
+          queueNumber: _parseInt(map['queueNumber']),
+          tableId: (map['tableId'] != null) ? map['tableId'].toString() : null,
           paymentStatus: map['paymentStatus'] ?? 'pending',
           timestamp: DateTime.parse(
             map['createdAt'] ??
@@ -176,7 +166,7 @@ class OrderRepository {
     try {
       await _apiClient.post(
         '/orders/$orderId/payment',
-        body: {'method': method, 'amount': amount},
+        body: {'method': method, 'amount': amount, 'reference': reference},
       );
     } catch (e) {
       throw Exception('Failed to create payment: $e');
@@ -197,11 +187,25 @@ class OrderRepository {
       final response = await _apiClient.get('/sales/stats');
       return {
         'count': response['count'],
-        'revenue': (response['revenue'] as num).toDouble(),
+        'revenue': _parseDouble(response['revenue']),
         'active_orders': response['active_orders'],
       };
     } catch (e) {
       return {'count': 0, 'revenue': 0.0, 'active_orders': 0};
     }
+  }
+
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL, -- Should be hashed in prod
-            role ENUM('admin', 'staff', 'kitchen', 'customer') DEFAULT 'customer',
+            role ENUM('admin', 'staff', 'kitchen', 'cashier', 'customer') DEFAULT 'customer',
     token VARCHAR(255) -- Simple token for demo
 );
 

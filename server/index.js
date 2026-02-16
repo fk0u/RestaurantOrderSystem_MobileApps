@@ -239,10 +239,16 @@ app.get('/api/orders', (req, res) => {
                                 modifiers = [];
                             }
                         }
-                        return { ...item, modifiers };
+                        return {
+                            ...item,
+                            modifiers,
+                            price: parseFloat(item.price),
+                            quantity: parseInt(item.quantity)
+                        };
                     });
                     
                     order.items = parsedItems;
+                    order.totalPrice = parseFloat(order.totalPrice);
                     resolve(order);
                 });
             });
@@ -268,7 +274,8 @@ app.post('/api/orders', (req, res) => {
     const order = req.body;
     const {
         id, userId, userName, totalPrice, status,
-        orderType, queueNumber, tableId, items, paymentMethod
+        orderType, queueNumber, tableId, items, paymentMethod,
+        subtotal, tax
     } = order;
 
     db.getConnection((err, connection) => {
@@ -310,18 +317,28 @@ app.post('/api/orders', (req, res) => {
 
                 // 3. Insert Order
                 const insertOrderQuery = `
-                    INSERT INTO orders (app_id, userId, guestName, totalPrice, status, orderType, queueNumber, tableId, paymentStatus, paymentMethod)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+                    INSERT INTO orders (
+                        app_id, userId, guestName, totalPrice, status, 
+                        orderType, queueNumber, tableId, paymentStatus, paymentMethod,
+                        subtotal, tax
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
                 `;
                 const realUserId = (userId === 'guest' || isNaN(userId)) ? null : userId;
+                
+                const finalSubtotal = subtotal || (totalPrice / 1.11);
+                const finalTax = tax || (totalPrice - finalSubtotal);
+
+                const orderValues = [
+                    id, realUserId, userName, totalPrice, status || 'Sedang Diproses',
+                    orderType, queueNumber, realTableId, paymentMethod || null,
+                    finalSubtotal, finalTax
+                ];
 
                 const orderResult = await new Promise((resolve, reject) => {
-                    connection.query(insertOrderQuery,
-                        [id, realUserId, userName, totalPrice, status, orderType, queueNumber, realTableId, paymentMethod],
-                        (err, res) => {
-                            if (err) reject(err); else resolve(res);
-                        }
-                    );
+                    connection.query(insertOrderQuery, orderValues, (err, res) => {
+                        if (err) reject(err); else resolve(res);
+                    });
                 });
 
                 const orderDbId = orderResult.insertId;
@@ -385,10 +402,12 @@ app.patch('/api/orders/:id/status', (req, res) => {
 // Payment
 app.post('/api/orders/:id/payment', (req, res) => {
     const { id } = req.params; // app_id
-    const { method, amount } = req.body;
+    const { method, amount, reference } = req.body;
 
-    const query = 'UPDATE orders SET paymentStatus = "paid" WHERE app_id = ?';
-    db.query(query, [id], (err, result) => {
+    // Update order status to 'paid' and 'Selesai' (Completed)
+    // Also save paymentMethod and paymentReference
+    const query = 'UPDATE orders SET paymentStatus = "paid", status = "Selesai", paymentMethod = ?, paymentReference = ?, paidAt = NOW() WHERE app_id = ?';
+    db.query(query, [method, reference || null, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         if (result.affectedRows === 0) return res.status(404).json({ error: 'Order not found' });
         res.json({ message: 'Payment processed' });
@@ -411,7 +430,7 @@ app.get('/api/sales/stats', (req, res) => {
     ]).then(([[totalRows], [revRows], [activeRows]]) => {
         res.json({
             count: totalRows[0].count,
-            revenue: revRows[0].total || 0,
+            revenue: parseFloat(revRows[0].total || 0),
             active_orders: activeRows[0].count
         });
     }).catch(err => {

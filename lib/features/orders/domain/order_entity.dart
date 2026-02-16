@@ -18,6 +18,8 @@ class Order {
   final String? paymentStatus;
   final String? paymentMethod;
   final DateTime? paidAt;
+  final double subtotal;
+  final double tax;
   final List<CartItem> items; // Make sure this is populated when fetching
 
   Order({
@@ -38,6 +40,8 @@ class Order {
     this.paymentStatus,
     this.paymentMethod,
     this.paidAt,
+    this.subtotal = 0,
+    this.tax = 0,
     this.items = const [],
   });
 
@@ -59,6 +63,8 @@ class Order {
     String? paymentStatus,
     String? paymentMethod,
     DateTime? paidAt,
+    double? subtotal,
+    double? tax,
     List<CartItem>? items,
   }) {
     return Order(
@@ -79,6 +85,8 @@ class Order {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paidAt: paidAt ?? this.paidAt,
+      subtotal: subtotal ?? this.subtotal,
+      tax: tax ?? this.tax,
       items: items ?? this.items,
     );
   }
@@ -102,6 +110,8 @@ class Order {
       'paymentStatus': paymentStatus,
       'paymentMethod': paymentMethod,
       'paidAt': paidAt?.millisecondsSinceEpoch,
+      'subtotal': subtotal,
+      'tax': tax,
     };
   }
 
@@ -142,6 +152,12 @@ class Order {
                 ? DateTime.fromMillisecondsSinceEpoch(map['paidAt'])
                 : DateTime.tryParse(map['paidAt'].toString()))
           : null,
+      subtotal: (map['subtotal'] is String)
+          ? double.tryParse(map['subtotal']) ?? 0.0
+          : (map['subtotal'] as num?)?.toDouble() ?? 0.0,
+      tax: (map['tax'] is String)
+          ? double.tryParse(map['tax']) ?? 0.0
+          : (map['tax'] as num?)?.toDouble() ?? 0.0,
       items: items,
     );
   }

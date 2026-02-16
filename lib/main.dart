@@ -15,9 +15,12 @@ import 'features/cart/presentation/bloc/cart_bloc.dart';
 import 'features/cart/presentation/bloc/cart_event.dart';
 import 'features/orders/presentation/bloc/order_bloc.dart';
 
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await initializeDateFormatting('id_ID', null);
   await di.init(); // Initialize GetIt
   final storageService = await StorageService.init();
   await NotificationService.init();

@@ -84,6 +84,8 @@ class _LoginScreenState extends State<LoginScreen>
                   context.go('/admin');
                 } else if (user.role == 'kitchen') {
                   context.go('/kitchen');
+                } else if (user.role == 'cashier') {
+                  context.go('/cashier');
                 } else {
                   context.go('/order-type');
                 }

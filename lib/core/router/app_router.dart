@@ -12,6 +12,7 @@ import '../../features/admin/presentation/dashboard_screen.dart';
 import '../../features/admin/presentation/category_management_screen.dart';
 import '../../features/admin/presentation/product_management_screen.dart';
 import '../../features/admin/presentation/order_management_screen.dart';
+import '../../features/cashier/presentation/cashier_dashboard.dart';
 import '../../features/cart/presentation/cart_screen.dart';
 import '../../features/tables/presentation/table_screen.dart';
 import '../../features/profile_screen.dart';
@@ -43,6 +44,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         final user = authState.value;
         if (user?.role == 'admin') return '/admin';
         if (user?.role == 'kitchen') return '/kitchen';
+        if (user?.role == 'cashier') return '/cashier';
         return '/order-type'; // New home for staff/customer
       }
 
@@ -61,6 +63,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/kitchen',
         builder: (context, state) => const KitchenScreen(),
+      ),
+      GoRoute(
+        path: '/cashier',
+        builder: (context, state) => const CashierDashboard(),
       ),
       GoRoute(
         path: '/product_detail',

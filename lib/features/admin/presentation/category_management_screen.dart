@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restaurant_order_system/core/input/toaster.dart';
 import 'package:restaurant_order_system/features/menu/domain/category_entity.dart';
+import '../../../../core/theme/design_system.dart';
 import 'controllers/category_controller.dart';
 
 class CategoryManagementScreen extends ConsumerWidget {
@@ -12,49 +13,52 @@ class CategoryManagementScreen extends ConsumerWidget {
     final categoryState = ref.watch(categoryControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manajemen Kategori')),
-      floatingActionButton: FloatingActionButton(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text('Kategori Menu', style: AppTypography.heading3),
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCategoryDialog(context, ref),
-        child: const Icon(Icons.add),
+        label: const Text('Tambah Kategori'),
+        icon: const Icon(Icons.add),
+        backgroundColor: AppColors.primary,
       ),
       body: categoryState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (categories) {
           if (categories.isEmpty) {
-            return const Center(child: Text('Belum ada kategori'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.category_outlined,
+                    size: 64,
+                    color: AppColors.textHint,
+                  ),
+                  const SizedBox(height: AppDimens.s16),
+                  Text('Belum ada kategori', style: AppTypography.bodyMedium),
+                ],
+              ),
+            );
           }
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDimens.s16),
             itemCount: categories.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppDimens.s12),
             itemBuilder: (context, index) {
               final category = categories[index];
-              return ListTile(
-                tileColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-                title: Text(
-                  category.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(category.description),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () =>
-                          _showCategoryDialog(context, ref, category: category),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _confirmDelete(context, ref, category),
-                    ),
-                  ],
-                ),
+              return _CategoryCard(
+                category: category,
+                onEdit: () =>
+                    _showCategoryDialog(context, ref, category: category),
+                onDelete: () => _confirmDelete(context, ref, category),
               );
             },
           );
@@ -77,7 +81,10 @@ class CategoryManagementScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isEditing ? 'Edit Kategori' : 'Tambah Kategori'),
+        title: Text(
+          isEditing ? 'Edit Kategori' : 'Tambah Kategori',
+          style: AppTypography.heading3,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -86,10 +93,10 @@ class CategoryManagementScreen extends ConsumerWidget {
               decoration: const InputDecoration(
                 labelText: 'Nama Kategori',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.label),
+                prefixIcon: Icon(Icons.label_outline),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.s16),
             TextField(
               controller: descController,
               decoration: const InputDecoration(
@@ -107,6 +114,10 @@ class CategoryManagementScreen extends ConsumerWidget {
             child: const Text('Batal'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               try {
                 if (isEditing) {
@@ -152,9 +163,10 @@ class CategoryManagementScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Kategori'),
+        title: Text('Hapus Kategori', style: AppTypography.heading3),
         content: Text(
           'Anda yakin ingin menghapus kategori "${category.name}"?',
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -162,7 +174,7 @@ class CategoryManagementScreen extends ConsumerWidget {
             child: const Text('Batal'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             onPressed: () async {
               try {
                 await ref
@@ -181,6 +193,69 @@ class CategoryManagementScreen extends ConsumerWidget {
             child: const Text('Hapus'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CategoryCard extends StatelessWidget {
+  final Category category;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _CategoryCard({
+    required this.category,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimens.r12),
+        boxShadow: AppShadows.card,
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppDimens.r8),
+          ),
+          child: const Icon(Icons.category, color: AppColors.primary),
+        ),
+        title: Text(
+          category.name,
+          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            category.description,
+            style: AppTypography.bodySmall,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: AppColors.info),
+              onPressed: onEdit,
+              tooltip: 'Edit',
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              onPressed: onDelete,
+              tooltip: 'Hapus',
+            ),
+          ],
+        ),
       ),
     );
   }

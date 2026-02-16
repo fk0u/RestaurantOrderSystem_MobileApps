@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:restaurant_order_system/core/input/toaster.dart';
 import 'package:restaurant_order_system/features/menu/domain/product_entity.dart';
 import 'package:restaurant_order_system/features/menu/domain/category_entity.dart';
+import '../../../../core/theme/design_system.dart';
 import 'controllers/product_management_controller.dart';
 import 'controllers/category_controller.dart';
 
@@ -13,23 +14,43 @@ class ProductManagementScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productState = ref.watch(productManagementControllerProvider);
-    final categoryState = ref.watch(
-      categoryControllerProvider,
-    ); // Fetch categories for dropdown
+    final categoryState = ref.watch(categoryControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manajemen Produk & Stok')),
-      floatingActionButton: FloatingActionButton(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text('Manajemen Menu & Stok', style: AppTypography.heading3),
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () =>
             _showProductDialog(context, ref, null, categoryState.value ?? []),
-        child: const Icon(Icons.add),
+        label: const Text('Tambah Produk'),
+        icon: const Icon(Icons.add),
+        backgroundColor: AppColors.primary,
       ),
       body: productState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (products) {
           if (products.isEmpty) {
-            return const Center(child: Text('Belum ada produk'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.fastfood_outlined,
+                    size: 64,
+                    color: AppColors.textHint,
+                  ),
+                  const SizedBox(height: AppDimens.s16),
+                  Text('Belum ada produk', style: AppTypography.bodyMedium),
+                ],
+              ),
+            );
           }
           final currencyFormatter = NumberFormat.currency(
             locale: 'id_ID',
@@ -38,71 +59,20 @@ class ProductManagementScreen extends ConsumerWidget {
           );
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDimens.s16),
             itemCount: products.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppDimens.s16),
             itemBuilder: (context, index) {
               final product = products[index];
-              final isLowStock = product.stock < 10;
-
-              return ListTile(
-                tileColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: NetworkImage(product.imageUrl),
-                      fit: BoxFit.cover,
-                      onError: (_, __) => const Icon(Icons.image_not_supported),
-                    ),
-                  ),
-                ),
-                title: Text(
-                  product.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(currencyFormatter.format(product.price)),
-                    Text(product.category),
-                    Row(
-                      children: [
-                        Text(
-                          'Stok: ${product.stock}',
-                          style: TextStyle(
-                            color: isLowStock ? Colors.red : Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (!product.isAvailable)
-                          const Chip(
-                            label: Text(
-                              'Tidak Tersedia',
-                              style: TextStyle(fontSize: 10),
-                            ),
-                            backgroundColor: Colors.grey,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _showProductDialog(
-                    context,
-                    ref,
-                    product,
-                    categoryState.value ?? [],
-                  ),
+              return _ProductCard(
+                product: product,
+                currencyFormatter: currencyFormatter,
+                onEdit: () => _showProductDialog(
+                  context,
+                  ref,
+                  product,
+                  categoryState.value ?? [],
                 ),
               );
             },
@@ -137,11 +107,8 @@ class ProductManagementScreen extends ConsumerWidget {
       text: product?.imageUrl ?? '',
     );
 
-    // Dropdown selection
     int? selectedCategoryId = product?.categoryId;
     if (selectedCategoryId == null && categories.isNotEmpty) {
-      // If editing old product without categoryId, try to match by name or default to first
-      // Ideally should be null check. We default to first for new products.
       if (product == null) selectedCategoryId = categories.first.id;
     }
 
@@ -153,7 +120,10 @@ class ProductManagementScreen extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text(isEditing ? 'Edit Produk' : 'Tambah Produk'),
+            title: Text(
+              isEditing ? 'Edit Produk' : 'Tambah Produk',
+              style: AppTypography.heading3,
+            ),
             content: SizedBox(
               width: double.maxFinite,
               child: SingleChildScrollView(
@@ -263,7 +233,7 @@ class ProductManagementScreen extends ConsumerWidget {
                           'Tampilkan produk di menu pelanggan',
                         ),
                         value: isAvailable,
-                        activeTrackColor: Colors.green,
+                        activeTrackColor: AppColors.success,
                         onChanged: (val) => setState(() => isAvailable = val),
                       ),
                     ),
@@ -278,20 +248,23 @@ class ProductManagementScreen extends ConsumerWidget {
               ),
               if (isEditing)
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
                   onPressed: () async {
-                    // Confirm delete
                     await ref
                         .read(productManagementControllerProvider.notifier)
                         .deleteProduct(product.id);
                     if (context.mounted) {
-                      Navigator.pop(context); // Close dialog
+                      Navigator.pop(context);
                       Toaster.showSuccess(context, 'Produk dihapus');
                     }
                   },
                   child: const Text('Hapus'),
                 ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: () async {
                   if (selectedCategoryId == null) {
                     Toaster.showError(context, 'Pilih Kategori');
@@ -299,18 +272,14 @@ class ProductManagementScreen extends ConsumerWidget {
                   }
                   try {
                     final newProduct = Product(
-                      id:
-                          product?.id ??
-                          '', // ID handled by DB on create, but entity needs non-null.
-                      // Actually for create, ID is ignored by Repo/API usually.
-                      // But standard Entity is immutable.
+                      id: product?.id ?? '',
                       name: nameController.text,
                       description: descController.text,
                       price: double.tryParse(priceController.text) ?? 0,
                       imageUrl: imageController.text,
                       category: categories
                           .firstWhere((c) => c.id == selectedCategoryId)
-                          .name, // Fallback name
+                          .name,
                       stock: int.tryParse(stockController.text) ?? 0,
                       categoryId: selectedCategoryId,
                       isAvailable: isAvailable,
@@ -343,6 +312,160 @@ class ProductManagementScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final Product product;
+  final NumberFormat currencyFormatter;
+  final VoidCallback onEdit;
+
+  const _ProductCard({
+    required this.product,
+    required this.currencyFormatter,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLowStock = product.stock < 10;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimens.r12),
+        boxShadow: AppShadows.card,
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDimens.r12),
+          onTap: onEdit,
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimens.s12),
+            child: Row(
+              children: [
+                // Image
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppDimens.r8),
+                    color: Colors.grey.shade100,
+                    image: DecorationImage(
+                      image: NetworkImage(product.imageUrl),
+                      fit: BoxFit.cover,
+                      onError: (_, __) => const Icon(
+                        Icons.image_not_supported,
+                        size: 32,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppDimens.s16),
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              product.name,
+                              style: AppTypography.heading3.copyWith(
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          _buildStatusBadge(product.isAvailable),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.category,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            currencyFormatter.format(product.price),
+                            style: AppTypography.bodyLarge.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          _buildStockBadge(product.stock, isLowStock),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(bool isAvailable) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isAvailable
+            ? AppColors.success.withValues(alpha: 0.1)
+            : AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppDimens.r100),
+      ),
+      child: Text(
+        isAvailable ? 'Aktif' : 'Non-Aktif',
+        style: AppTypography.bodySmall.copyWith(
+          color: isAvailable ? AppColors.success : AppColors.error,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStockBadge(int stock, bool isLowStock) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isLowStock
+            ? Colors.orange.withValues(alpha: 0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppDimens.r4),
+        border: Border.all(
+          color: isLowStock ? Colors.orange : AppColors.border,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 14,
+            color: isLowStock ? Colors.orange : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$stock Stok',
+            style: AppTypography.bodySmall.copyWith(
+              color: isLowStock ? Colors.orange : AppColors.textSecondary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
