@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restaurant_order_system/features/orders/data/order_repository.dart';
 import 'package:restaurant_order_system/features/orders/domain/order_entity.dart';
@@ -13,8 +14,23 @@ final adminOrdersControllerProvider =
 class AdminOrdersController extends StateNotifier<AsyncValue<List<Order>>> {
   final OrderRepository _repository;
 
+  Timer? _timer;
+
   AdminOrdersController(this._repository) : super(const AsyncValue.loading()) {
     getOrders();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      getOrders();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> getOrders() async {
@@ -34,7 +50,7 @@ class AdminOrdersController extends StateNotifier<AsyncValue<List<Order>>> {
       await getOrders(); // Refresh list
     } catch (e) {
       // Handle error (UI should show toast via repo or catch here)
-      print('Error updating status: $e');
+      // debugPrint('Error updating status: $e');
     }
   }
 }

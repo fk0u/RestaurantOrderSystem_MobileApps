@@ -110,26 +110,37 @@ class Order {
     List<CartItem> items = const [],
   }) {
     return Order(
-      id: map['id'],
-      userId: map['userId'],
-      userName: map['userName'],
-      totalPrice: map['totalPrice'],
-      status: map['status'],
-      promoCode: map['promoCode'],
-      discount: (map['discount'] as num?)?.toDouble() ?? 0,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
-      orderType: map['orderType'] ?? 'takeaway',
-      tableId: map['tableId'],
-      tableNumber: map['tableNumber'],
-      tableCapacity: map['tableCapacity'] as int?,
-      queueNumber: map['queueNumber'] ?? 0,
+      id: map['id']?.toString() ?? '',
+      userId: map['userId']?.toString() ?? '',
+      userName: map['userName']?.toString() ?? '',
+      totalPrice: (map['totalPrice'] is String)
+          ? double.tryParse(map['totalPrice']) ?? 0.0
+          : (map['totalPrice'] as num?)?.toDouble() ?? 0.0,
+      status: map['status']?.toString() ?? 'pending',
+      promoCode: map['promoCode']?.toString(),
+      discount: (map['discount'] is String)
+          ? double.tryParse(map['discount']) ?? 0.0
+          : (map['discount'] as num?)?.toDouble() ?? 0.0,
+      timestamp: map['timestamp'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'])
+          : DateTime.tryParse(map['timestamp']?.toString() ?? '') ??
+                DateTime.now(),
+      orderType: map['orderType']?.toString() ?? 'takeaway',
+      tableId: map['tableId']?.toString(),
+      tableNumber: map['tableNumber']?.toString(),
+      tableCapacity: int.tryParse(map['tableCapacity']?.toString() ?? ''),
+      queueNumber: int.tryParse(map['queueNumber']?.toString() ?? '') ?? 0,
       readyAt: map['readyAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['readyAt'])
+          ? (map['readyAt'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['readyAt'])
+                : DateTime.tryParse(map['readyAt'].toString()))
           : null,
-      paymentStatus: map['paymentStatus'],
-      paymentMethod: map['paymentMethod'],
+      paymentStatus: map['paymentStatus']?.toString(),
+      paymentMethod: map['paymentMethod']?.toString(),
       paidAt: map['paidAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['paidAt'])
+          ? (map['paidAt'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['paidAt'])
+                : DateTime.tryParse(map['paidAt'].toString()))
           : null,
       items: items,
     );

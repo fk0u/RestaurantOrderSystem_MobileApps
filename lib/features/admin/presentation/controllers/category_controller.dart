@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restaurant_order_system/features/menu/data/menu_repository.dart';
 import 'package:restaurant_order_system/features/menu/domain/category_entity.dart';
 
+import '../../../../core/di/injection_container.dart';
+
 final categoryControllerProvider =
     StateNotifierProvider.autoDispose<
       CategoryController,
       AsyncValue<List<Category>>
     >((ref) {
-      return CategoryController(ref.read(menuRepositoryProvider));
+      return CategoryController(sl<MenuRepository>());
     });
 
 class CategoryController extends StateNotifier<AsyncValue<List<Category>>> {

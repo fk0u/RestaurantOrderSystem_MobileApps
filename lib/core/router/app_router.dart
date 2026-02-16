@@ -5,7 +5,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/main_wrapper.dart';
 import '../../features/menu/presentation/menu_screen.dart';
-import '../../features/orders_screen.dart';
+import '../../features/orders/presentation/orders_screen.dart';
 import '../../features/payment/presentation/payment_screen.dart';
 import '../../features/kitchen/presentation/kitchen_screen.dart';
 import '../../features/admin/presentation/dashboard_screen.dart';

@@ -207,9 +207,19 @@ app.put('/api/tables/:id', (req, res) => {
 
 // Get Orders
 app.get('/api/orders', (req, res) => {
-    // Basic get orders, maybe filter by date later
-    const query = 'SELECT * FROM orders ORDER BY createdAt DESC';
-    db.query(query, async (err, orders) => {
+    const { userId } = req.query;
+    
+    let query = 'SELECT * FROM orders';
+    const params = [];
+
+    if (userId) {
+        query += ' WHERE userId = ?';
+        params.push(userId);
+    }
+    
+    query += ' ORDER BY createdAt DESC';
+
+    db.query(query, params, async (err, orders) => {
         if (err) return res.status(500).json({ error: err.message });
 
         // Fetch items for each order
@@ -219,10 +229,20 @@ app.get('/api/orders', (req, res) => {
                 const itemQuery = 'SELECT * FROM order_items WHERE orderId = ?';
                 db.query(itemQuery, [order.id], (err, items) => {
                     if (err) reject(err);
-                    order.items = items.map(item => ({
-                        ...item,
-                        modifiers: item.modifiers // JSON already parsed by mysql2 if configured? verify
-                    }));
+                    // Parse modifiers if they are strings
+                    const parsedItems = items.map(item => {
+                        let modifiers = item.modifiers;
+                        if (typeof modifiers === 'string') {
+                            try {
+                                modifiers = JSON.parse(modifiers);
+                            } catch (e) {
+                                modifiers = [];
+                            }
+                        }
+                        return { ...item, modifiers };
+                    });
+                    
+                    order.items = parsedItems;
                     resolve(order);
                 });
             });

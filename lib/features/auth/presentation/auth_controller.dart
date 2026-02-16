@@ -12,10 +12,10 @@ class AuthController extends StateNotifier<AsyncValue<User?>> {
   final AuthRepository _repository;
 
   AuthController(this._repository) : super(const AsyncValue.data(null)) {
-    _checkSession();
+    checkSession();
   }
 
-  Future<void> _checkSession() async {
+  Future<void> checkSession() async {
     state = const AsyncValue.loading();
     try {
       final user = await _repository.getCurrentUser();

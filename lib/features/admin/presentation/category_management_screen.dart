@@ -117,25 +117,28 @@ class CategoryManagementScreen extends ConsumerWidget {
                         nameController.text,
                         descController.text,
                       );
-                  if (context.mounted)
+                  if (context.mounted) {
                     Toaster.showSuccess(
                       context,
                       'Kategori berhasil diperbarui',
                     );
+                  }
                 } else {
                   await ref
                       .read(categoryControllerProvider.notifier)
                       .addCategory(nameController.text, descController.text);
-                  if (context.mounted)
+                  if (context.mounted) {
                     Toaster.showSuccess(
                       context,
                       'Kategori berhasil ditambahkan',
                     );
+                  }
                 }
                 if (context.mounted) Navigator.pop(context);
               } catch (e) {
-                if (context.mounted)
+                if (context.mounted) {
                   Toaster.showError(context, 'Gagal menyimpan: $e');
+                }
               }
             },
             child: const Text('Simpan'),
@@ -170,8 +173,9 @@ class CategoryManagementScreen extends ConsumerWidget {
                   Toaster.showSuccess(context, 'Kategori berhasil dihapus');
                 }
               } catch (e) {
-                if (context.mounted)
+                if (context.mounted) {
                   Toaster.showError(context, 'Gagal menghapus: $e');
+                }
               }
             },
             child: const Text('Hapus'),

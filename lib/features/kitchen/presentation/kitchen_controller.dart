@@ -1,19 +1,34 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../orders/data/order_repository.dart';
 import '../../orders/domain/order_entity.dart';
 import '../../../core/services/notification_service.dart';
 
-
-
-final kitchenControllerProvider = StateNotifierProvider<KitchenController, AsyncValue<List<Order>>>((ref) {
-  return KitchenController(ref.read(orderRepositoryProvider));
-});
+final kitchenControllerProvider =
+    StateNotifierProvider<KitchenController, AsyncValue<List<Order>>>((ref) {
+      return KitchenController(ref.read(orderRepositoryProvider));
+    });
 
 class KitchenController extends StateNotifier<AsyncValue<List<Order>>> {
   final OrderRepository _repository;
 
+  Timer? _timer;
+
   KitchenController(this._repository) : super(const AsyncValue.loading()) {
     loadOrders();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      loadOrders();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> loadOrders() async {
@@ -21,7 +36,9 @@ class KitchenController extends StateNotifier<AsyncValue<List<Order>>> {
       final orders = await _repository.getOrders();
       // Filter for active orders only (pending, cooking, ready)
       // For demo, maybe show all or just active. Let's show all non-completed for Kitchen.
-      final activeOrders = orders.where((o) => o.status != 'Selesai' && o.status != 'Dibatalkan').toList();
+      final activeOrders = orders
+          .where((o) => o.status != 'Selesai' && o.status != 'Dibatalkan')
+          .toList();
       state = AsyncValue.data(activeOrders);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

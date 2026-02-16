@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:restaurant_order_system/core/theme/design_system.dart';
-import '../../cart/presentation/cart_controller.dart';
 import 'package:uuid/uuid.dart';
 import '../../auth/presentation/auth_controller.dart';
-import '../../orders/data/order_repository.dart';
+import '../../cart/presentation/bloc/cart_bloc.dart';
+import '../../cart/presentation/bloc/cart_event.dart';
+import '../../cart/presentation/bloc/cart_state.dart';
+import '../../orders/presentation/bloc/order_bloc.dart';
+import '../../orders/presentation/bloc/order_event.dart';
+import '../../orders/presentation/bloc/order_state.dart';
 import '../../orders/domain/order_entity.dart';
 import '../../tables/data/table_repository.dart';
 import '../../tables/domain/table_entity.dart';
@@ -38,7 +43,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     super.dispose();
   }
 
-  Future<void> _applyPromo() async {
+  Future<void> _applyPromo(double subtotal) async {
     final code = _promoController.text.trim();
     if (code.isEmpty) return;
 
@@ -58,7 +63,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         return;
       }
 
-      final subtotal = ref.read(cartSubtotalProvider);
       if (promo.minOrder > 0 && subtotal < promo.minOrder) {
         setState(() {
           _promoError = 'Minimum order belum terpenuhi';
@@ -120,19 +124,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   void _processPayment() async {
     final details = await _collectOrderDetails();
     if (details == null) return;
-
-    setState(() => _isProcessing = true);
-
-    // Simulate Network/Processing
-    await Future.delayed(const Duration(seconds: 2));
-
     if (!mounted) return;
 
+    // Get current cart state
+    final cartState = context.read<CartBloc>().state;
+    if (cartState is! CartLoaded || cartState.items.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Keranjang kosong')));
+      }
+      return;
+    }
+
+    // No setState _isProcessing = true here, handled by BlocListener/State
+    // But for UI feedback, BlocListener is better.
+
     final user = ref.read(authControllerProvider).value;
-    final cartItems = ref.read(cartControllerProvider);
-    final subtotal = ref.read(cartSubtotalProvider);
-    final tax = ref.read(cartTaxProvider);
-    final service = ref.read(cartServiceFeeProvider);
+
+    final cartItems = cartState.items;
+    final subtotal = cartState.subtotal;
+    final tax = cartState.tax;
+    final service = cartState.serviceFee;
+
     final total = (subtotal + tax + service - _discountValue)
         .clamp(0, double.infinity)
         .toDouble();
@@ -157,38 +171,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       items: cartItems,
     );
 
-    // Save to SQLite
-    try {
-      final createdOrder = await ref
-          .read(orderRepositoryProvider)
-          .createOrder(order);
-      if (details.orderType == 'dine_in' && details.table != null) {
-        await ref
-            .read(tableRepositoryProvider)
-            .updateTableStatus(details.table!.id, 'occupied');
-      }
-
-      await ref
-          .read(orderRepositoryProvider)
-          .createPayment(
-            orderId: createdOrder.id,
-            method: _selectedMethod,
-            amount: createdOrder.totalPrice,
-          );
-
-      // Clear Cart
-      ref.read(cartControllerProvider.notifier).clearCart();
-
-      // Show Receipt Dialog
-      if (!mounted) return;
-      _showReceiptDialog(context, createdOrder);
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
+    context.read<OrderBloc>().add(
+      PlaceOrder(order: order, paymentMethod: _selectedMethod),
+    );
   }
 
   Future<_OrderDetails?> _collectOrderDetails() async {
@@ -509,271 +494,314 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subtotal = ref.watch(cartSubtotalProvider);
-    final tax = ref.watch(cartTaxProvider);
-    final service = ref.watch(cartServiceFeeProvider);
-    final total = (subtotal + tax + service - _discountValue)
-        .clamp(0, double.infinity)
-        .toDouble();
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
+    return BlocListener<OrderBloc, OrderState>(
+      listener: (context, state) {
+        if (state is OrderLoading) {
+          setState(() => _isProcessing = true);
+        } else if (state is OrderOperationSuccess) {
+          setState(() => _isProcessing = false);
+          // Clear Cart
+          context.read<CartBloc>().add(ClearCart());
+          // Show Receipt
+          _showReceiptDialog(context, state.order);
+        } else if (state is OrderError) {
+          setState(() => _isProcessing = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
+        }
+      },
+      child: BlocBuilder<CartBloc, CartState>(
+        builder: (context, state) {
+          double subtotal = 0;
+          double tax = 0;
+          double service = 0;
+          double total = 0;
 
-    // Mock QRIS String
-    final qrisData =
-        "00020101021126570014ID.GO.GOPAY.SHORT123456789${const Uuid().v4()}";
+          if (state is CartLoaded) {
+            subtotal = state.subtotal;
+            tax = state.tax;
+            service = state.serviceFee;
+          }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'Pembayaran',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Total Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+          total = (subtotal + tax + service - _discountValue)
+              .clamp(0, double.infinity)
+              .toDouble();
+
+          final currencyFormatter = NumberFormat.currency(
+            locale: 'id_ID',
+            symbol: 'Rp ',
+            decimalDigits: 0,
+          );
+
+          // Mock QRIS String
+          final qrisData =
+              "00020101021126570014ID.GO.GOPAY.SHORT123456789${const Uuid().v4()}";
+
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              title: const Text(
+                'Pembayaran',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Total Tagihan',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currencyFormatter.format(total),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              backgroundColor: Colors.white,
             ),
-            const SizedBox(height: 24),
-
-            // Promo Code
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Gunakan Promo',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _promoController,
-                          decoration: InputDecoration(
-                            hintText: 'Masukkan kode promo',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: _isApplyingPromo ? null : _applyPromo,
-                        child: _isApplyingPromo
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Pakai'),
-                      ),
-                    ],
-                  ),
-                  if (_promoError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _promoError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ],
-                  if (_promo != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Promo: ${_promo!.title}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.green,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _clearPromo,
-                          child: const Text('Hapus'),
+                  // Total Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Payment Breakdown
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                children: [
-                  _buildSummaryRow('Subtotal', subtotal, currencyFormatter),
-                  _buildSummaryRow('Pajak (11%)', tax, currencyFormatter),
-                  _buildSummaryRow(
-                    'Service Charge (5%)',
-                    service,
-                    currencyFormatter,
-                  ),
-                  if (_discountValue > 0)
-                    _buildSummaryRow(
-                      'Diskon',
-                      -_discountValue,
-                      currencyFormatter,
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Total Tagihan',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          currencyFormatter.format(total),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                  const Divider(height: 24),
-                  _buildSummaryRow(
-                    'Total',
-                    total,
-                    currencyFormatter,
-                    isTotal: true,
                   ),
-                ],
-              ),
-            ),
+                  const SizedBox(height: 24),
 
-            const SizedBox(height: 32),
-
-            // Payment Methods
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Pilih Metode Pembayaran',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildMethodCard(
-              id: 'qris',
-              title: 'QRIS',
-              subtitle: 'Scan dengan GoPay, OVO, Dana',
-              icon: Icons.qr_code_scanner,
-            ),
-            const SizedBox(height: 16),
-            _buildMethodCard(
-              id: 'cash',
-              title: 'Tunai / Kasir',
-              subtitle: 'Bayar langsung di kasir',
-              icon: Icons.money,
-            ),
-
-            const SizedBox(height: 32),
-
-            // QR Display or Info
-            if (_selectedMethod == 'qris')
-              Column(
-                children: [
+                  // Promo Code
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    child: QrImageView(
-                      data: qrisData,
-                      version: QrVersions.auto,
-                      size: 200.0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Gunakan Promo',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _promoController,
+                                decoration: InputDecoration(
+                                  hintText: 'Masukkan kode promo',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: _isApplyingPromo
+                                  ? null
+                                  : () => _applyPromo(subtotal),
+                              child: _isApplyingPromo
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Pakai'),
+                            ),
+                          ],
+                        ),
+                        if (_promoError != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _promoError!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                        if (_promo != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Promo: ${_promo!.title}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _clearPromo,
+                                child: const Text('Hapus'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Payment Breakdown
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSummaryRow(
+                          'Subtotal',
+                          subtotal,
+                          currencyFormatter,
+                        ),
+                        _buildSummaryRow('Pajak (11%)', tax, currencyFormatter),
+                        _buildSummaryRow(
+                          'Service Charge (5%)',
+                          service,
+                          currencyFormatter,
+                        ),
+                        if (_discountValue > 0)
+                          _buildSummaryRow(
+                            'Diskon',
+                            -_discountValue,
+                            currencyFormatter,
+                          ),
+                        const Divider(height: 24),
+                        _buildSummaryRow(
+                          'Total',
+                          total,
+                          currencyFormatter,
+                          isTotal: true,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Payment Methods
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Pilih Metode Pembayaran',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Pindai kode QR di atas untuk membayar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
 
-            if (_selectedMethod == 'cash')
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline, color: AppColors.warning),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'Silakan menuju kasir untuk melakukan pembayaran tunai.',
-                        style: TextStyle(color: AppColors.warning),
+                  _buildMethodCard(
+                    id: 'qris',
+                    title: 'QRIS',
+                    subtitle: 'Scan dengan GoPay, OVO, Dana',
+                    icon: Icons.qr_code_scanner,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMethodCard(
+                    id: 'cash',
+                    title: 'Tunai / Kasir',
+                    subtitle: 'Bayar langsung di kasir',
+                    icon: Icons.money,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // QR Display or Info
+                  if (_selectedMethod == 'qris')
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: QrImageView(
+                            data: qrisData,
+                            version: QrVersions.auto,
+                            size: 200.0,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Pindai kode QR di atas untuk membayar',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+
+                  if (_selectedMethod == 'cash')
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AppColors.warning),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              'Silakan menuju kasir untuk melakukan pembayaran tunai.',
+                              style: TextStyle(color: AppColors.warning),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                ],
+              ),
+            ),
+            bottomNavigationBar: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(color: Colors.white),
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isProcessing ? null : _processPayment,
+                  child: _isProcessing
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          _selectedMethod == 'qris'
+                              ? 'Saya Sudah Membayar'
+                              : 'Konfirmasi Pesanan',
+                        ),
                 ),
               ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(color: Colors.white),
-        child: SizedBox(
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _isProcessing ? null : _processPayment,
-            child: _isProcessing
-                ? const CircularProgressIndicator(color: Colors.white)
-                : Text(
-                    _selectedMethod == 'qris'
-                        ? 'Saya Sudah Membayar'
-                        : 'Konfirmasi Pesanan',
-                  ),
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

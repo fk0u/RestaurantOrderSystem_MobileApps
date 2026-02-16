@@ -87,7 +87,7 @@ class _AdminOrderCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getStatusColor(order.status).withOpacity(0.1),
+                color: _getStatusColor(order.status).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -219,7 +219,9 @@ class _StatusButton extends ConsumerWidget {
     final isSelected = status == currentStatus;
     return ActionChip(
       label: Text(status),
-      backgroundColor: isSelected ? color.withOpacity(0.2) : Colors.grey[100],
+      backgroundColor: isSelected
+          ? color.withValues(alpha: 0.2)
+          : Colors.grey[100],
       labelStyle: TextStyle(
         color: isSelected ? color : Colors.black87,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

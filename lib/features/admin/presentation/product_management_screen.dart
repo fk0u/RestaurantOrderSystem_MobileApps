@@ -263,7 +263,7 @@ class ProductManagementScreen extends ConsumerWidget {
                           'Tampilkan produk di menu pelanggan',
                         ),
                         value: isAvailable,
-                        activeColor: Colors.green,
+                        activeTrackColor: Colors.green,
                         onChanged: (val) => setState(() => isAvailable = val),
                       ),
                     ),
@@ -320,19 +320,22 @@ class ProductManagementScreen extends ConsumerWidget {
                       await ref
                           .read(productManagementControllerProvider.notifier)
                           .updateProduct(newProduct);
-                      if (context.mounted)
+                      if (context.mounted) {
                         Toaster.showSuccess(context, 'Produk diperbarui');
+                      }
                     } else {
                       await ref
                           .read(productManagementControllerProvider.notifier)
                           .addProduct(newProduct);
-                      if (context.mounted)
+                      if (context.mounted) {
                         Toaster.showSuccess(context, 'Produk ditambahkan');
+                      }
                     }
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (context.mounted)
+                    if (context.mounted) {
                       Toaster.showError(context, 'Gagal menyimpan: $e');
+                    }
                   }
                 },
                 child: const Text('Simpan'),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/order_entity.dart';
 import '../../../../core/network/api_client.dart';
@@ -94,13 +95,16 @@ class OrderRepository {
               try {
                 final decoded = jsonDecode(itemMap['modifiers']);
                 if (decoded is List) modifiers = List<String>.from(decoded);
-              } catch (e) {}
+              } catch (e) {
+                // Ignore parsing errors for modifiers
+              }
             } else if (itemMap['modifiers'] is List) {
               modifiers = List<String>.from(itemMap['modifiers']);
             }
           }
 
           return CartItem(
+            id: const Uuid().v4(), // Generated for display/reorder purposes
             product: Product(
               id: itemMap['productId'].toString(),
               name: itemMap['name'] ?? '',

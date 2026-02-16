@@ -10,5 +10,5 @@ class DatabaseService {
     throw UnimplementedError(
       "SQLite is disabled. Please use ApiClient for backend communication.",
     );
-  }2
+  }
 }

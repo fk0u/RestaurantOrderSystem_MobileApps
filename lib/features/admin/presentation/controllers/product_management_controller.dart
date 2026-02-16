@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restaurant_order_system/features/menu/data/menu_repository.dart';
 import 'package:restaurant_order_system/features/menu/domain/product_entity.dart';
 
+import '../../../../core/di/injection_container.dart';
+
 final productManagementControllerProvider =
     StateNotifierProvider.autoDispose<
       ProductManagementController,
       AsyncValue<List<Product>>
     >((ref) {
-      return ProductManagementController(ref.read(menuRepositoryProvider));
+      return ProductManagementController(sl<MenuRepository>());
     });
 
 class ProductManagementController

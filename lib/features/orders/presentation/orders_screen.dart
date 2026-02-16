@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:restaurant_order_system/core/theme/design_system.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../core/theme/design_system.dart';
+import 'bloc/order_bloc.dart';
+import 'bloc/order_event.dart';
+import 'bloc/order_state.dart';
+import '../domain/order_entity.dart';
 
-import 'orders/presentation/orders_controller.dart';
-import 'orders/domain/order_entity.dart';
-
-class OrdersScreen extends ConsumerStatefulWidget {
+class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+  State<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends ConsumerState<OrdersScreen>
+class _OrdersScreenState extends State<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -21,6 +22,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Fetch orders when screen initializes
+    context.read<OrderBloc>().add(FetchOrders());
   }
 
   @override
@@ -31,8 +34,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
 
   @override
   Widget build(BuildContext context) {
-    final ordersState = ref.watch(ordersControllerProvider);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -52,7 +53,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                   ),
                   IconButton(
                     icon: const Icon(Icons.refresh),
-                    onPressed: () => ref.refresh(ordersControllerProvider),
+                    onPressed: () {
+                      context.read<OrderBloc>().add(FetchOrders());
+                    },
                   ),
                 ],
               ),
@@ -84,32 +87,49 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
             ),
 
             Expanded(
-              child: ordersState.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Error: $err')),
-                data: (orders) {
-                  final activeOrders = orders
-                      .where(
-                        (o) =>
-                            o.status != 'Selesai' && o.status != 'Dibatalkan',
-                      )
-                      .toList();
-                  final historyOrders = orders
-                      .where(
-                        (o) =>
-                            o.status == 'Selesai' || o.status == 'Dibatalkan',
-                      )
-                      .toList();
+              child: BlocBuilder<OrderBloc, OrderState>(
+                builder: (context, state) {
+                  if (state is OrderLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is OrderError) {
+                    return Center(child: Text('Error: ${state.message}'));
+                  } else if (state is OrderLoaded) {
+                    final orders = state.orders;
 
-                  return TabBarView(
-                    controller: _tabController,
-                    children: [
-                      // Active Orders
-                      _buildOrderList(activeOrders),
-                      // History
-                      _buildOrderList(historyOrders),
-                    ],
-                  );
+                    final activeOrders = orders.where((o) {
+                      final status = o.status.toLowerCase();
+                      return status != 'selesai' &&
+                          status != 'completed' &&
+                          status != 'dibatalkan' &&
+                          status != 'cancelled';
+                    }).toList();
+
+                    final historyOrders = orders.where((o) {
+                      final status = o.status.toLowerCase();
+                      return status == 'selesai' ||
+                          status == 'completed' ||
+                          status == 'dibatalkan' ||
+                          status == 'cancelled';
+                    }).toList();
+
+                    return TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Active Orders
+                        _buildOrderList(activeOrders),
+                        // History
+                        _buildOrderList(historyOrders),
+                      ],
+                    );
+                  }
+
+                  // Initial or unknown state - try fetching if not loading
+                  if (state is OrderInitial) {
+                    context.read<OrderBloc>().add(FetchOrders());
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return const Center(child: CircularProgressIndicator());
                 },
               ),
             ),
@@ -171,8 +191,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          order.id,
+                          'Order #${order.id}', // Customized display
                           style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           'Antrian #${order.queueNumber}',
@@ -196,11 +217,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      order.status,
+                      order.status.toUpperCase(),
                       style: TextStyle(
                         color: _getStatusColor(order.status),
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 10,
                       ),
                     ),
                   ),
@@ -282,6 +303,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                           ],
                         ),
                       ),
+                      Text(
+                        currencyFormatter.format(
+                          item.product.price * item.quantity,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -299,6 +329,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -313,13 +344,23 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'selesai':
+      case 'completed':
         return AppColors.success;
       case 'dibatalkan':
+      case 'cancelled':
         return Colors.red;
       case 'sedang diproses':
+      case 'processing':
+      case 'pending':
         return Colors.orange;
       case 'sedang dimasak':
+      case 'cooking':
         return AppColors.warning;
+      case 'siap saji':
+      case 'ready':
+        return Colors.blue;
+      case 'paid':
+        return Colors.teal;
       default:
         return AppColors.primary;
     }

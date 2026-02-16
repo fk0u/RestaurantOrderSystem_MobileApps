@@ -1,11 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/product_entity.dart';
 
 import '../../../../core/network/api_client.dart';
-
-final menuRepositoryProvider = Provider<MenuRepository>((ref) {
-  return MenuRepository(ApiClient());
-});
 
 class MenuRepository {
   final ApiClient _apiClient;
