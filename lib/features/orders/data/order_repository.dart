@@ -157,6 +157,10 @@ class OrderRepository {
     }
   }
 
+  Future<void> cancelOrder(String orderId) async {
+    return updateOrderStatus(orderId, 'Dibatalkan');
+  }
+
   Future<void> createPayment({
     required String orderId,
     required String method,

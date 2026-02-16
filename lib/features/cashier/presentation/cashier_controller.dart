@@ -139,6 +139,20 @@ class CashierController extends StateNotifier<CashierState> {
     }
   }
 
+  Future<void> cancelOrder(String orderId) async {
+    try {
+      state = state.copyWith(isProcessing: true, error: null);
+      await _repository.cancelOrder(orderId);
+      await loadOrders();
+      if (state.selectedOrder?.id == orderId) {
+        clearSelection();
+      }
+      state = state.copyWith(isProcessing: false);
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+    }
+  }
+
   Future<bool> createWalkInOrder({
     required List<dynamic> items, // dynamic to match CartItem import
     required String guestName,
