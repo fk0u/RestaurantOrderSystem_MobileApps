@@ -161,10 +161,13 @@ class CashierController extends StateNotifier<CashierState> {
     state = state.copyWith(isProcessing: true, error: null);
 
     try {
-      final totalPrice = items.fold<double>(
+      final subtotal = items.fold<double>(
         0,
         (sum, item) => sum + (item.product.price * item.quantity),
       );
+      final tax =
+          subtotal * 0.11; // PPN 11% only, no service charge for walk-in
+      final totalPrice = subtotal + tax;
 
       final order = Order(
         id: DateTime.now().millisecondsSinceEpoch
@@ -172,6 +175,8 @@ class CashierController extends StateNotifier<CashierState> {
         userId: 'cashier', // Indicate created by staff
         userName: guestName,
         totalPrice: totalPrice,
+        subtotal: subtotal,
+        tax: tax,
         status:
             'Sedang Diproses', // Directly to processing as it is confirmed by cashier
         timestamp: DateTime.now(),

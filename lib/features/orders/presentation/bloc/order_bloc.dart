@@ -10,6 +10,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   final TableRepository _tableRepository;
 
   Timer? _timer;
+  String? _lastUserId;
 
   OrderBloc({
     required OrderRepository orderRepository,
@@ -24,16 +25,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
   void _startPolling() {
     _timer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (_lastUserId != null) {
-        add(FetchOrders(userId: _lastUserId));
-      } else {
-        // Try fetching generic if no user id yet (or handles inside)
-        add(FetchOrders());
-      }
+      add(FetchOrders(userId: _lastUserId));
     });
   }
-
-  String? _lastUserId;
 
   @override
   Future<void> close() {
@@ -46,14 +40,22 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     Emitter<OrderState> emit,
   ) async {
     if (event.userId != null) _lastUserId = event.userId;
-    // Don't emit loading on poll to avoid flickering?
-    // If state is already loaded, maybe don't emit loading?
-    // For now, simple approach.
-    emit(OrderLoading());
+
+    // Only show loading spinner on the very first fetch, not on poll refreshes
+    final isFirstLoad = state is OrderInitial || state is OrderError;
+    if (isFirstLoad) {
+      emit(OrderLoading());
+    }
+
     try {
       final orders = await _orderRepository.getOrders(userId: event.userId);
       emit(OrderLoaded(orders));
     } catch (e) {
+      // On poll failure, keep existing data if available
+      if (state is OrderLoaded) {
+        // Silently ignore to avoid disrupting the UI
+        return;
+      }
       emit(OrderError(e.toString()));
     }
   }
@@ -80,11 +82,6 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       emit(OrderOperationSuccess(createdOrder, 'Pesanan berhasil dibuat!'));
-
-      // Refresh list after placement if needed, or rely on UI to trigger refresh
-      // Typically we might reload orders here:
-      // add(FetchOrders(userId: event.order.userId));
-      // But let's keep it simple and let UI handle navigation/refresh.
     } catch (e) {
       emit(OrderError(e.toString()));
     }

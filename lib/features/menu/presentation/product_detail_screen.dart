@@ -405,7 +405,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       // Add Button
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: widget.product.stock > 0 && !isInCart
+                          onPressed: widget.product.stock > 0
                               ? () {
                                   context.read<CartBloc>().add(
                                     AddCartItem(
@@ -443,8 +443,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Text(
                             widget.product.stock <= 0
                                 ? 'Stok Habis'
-                                : isInCart
-                                ? 'Sudah di Keranjang'
                                 : 'Tambah - ${currencyFormatter.format(totalPrice)}',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),

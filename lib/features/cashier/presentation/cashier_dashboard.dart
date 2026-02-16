@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -25,9 +26,20 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
   );
 
   final PageController _pageController = PageController();
+  late Timer _clockTimer;
+  DateTime _currentTime = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _currentTime = DateTime.now());
+    });
+  }
 
   @override
   void dispose() {
+    _clockTimer.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -44,7 +56,35 @@ class _CashierDashboardState extends ConsumerState<CashierDashboard> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('POS Kasir', style: AppTypography.heading3),
+        title: Row(
+          children: [
+            Text('POS Kasir', style: AppTypography.heading3),
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.access_time, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    DateFormat('HH:mm:ss').format(_currentTime),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [

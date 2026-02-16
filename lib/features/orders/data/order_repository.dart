@@ -125,7 +125,8 @@ class OrderRepository {
           tax: _parseDouble(map['tax']),
           orderType: map['orderType'] ?? 'dine_in',
           queueNumber: _parseInt(map['queueNumber']),
-          tableId: (map['tableId'] != null) ? map['tableId'].toString() : null,
+          tableId: (map['tableAppId'] ?? map['tableId'])?.toString(),
+          tableNumber: map['tableNumber']?.toString(),
           paymentStatus: map['paymentStatus'] ?? 'pending',
           timestamp: DateTime.parse(
             map['createdAt'] ??

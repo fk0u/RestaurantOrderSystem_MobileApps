@@ -209,15 +209,16 @@ app.put('/api/tables/:id', (req, res) => {
 app.get('/api/orders', (req, res) => {
     const { userId } = req.query;
     
-    let query = 'SELECT * FROM orders';
+    // Updated query to join tables
+    let query = 'SELECT o.*, t.number as tableNumber, t.app_id as tableAppId FROM orders o LEFT JOIN restaurant_tables t ON o.tableId = t.id';
     const params = [];
 
     if (userId) {
-        query += ' WHERE userId = ?';
+        query += ' WHERE o.userId = ?';
         params.push(userId);
     }
     
-    query += ' ORDER BY createdAt DESC';
+    query += ' ORDER BY o.createdAt DESC';
 
     db.query(query, params, async (err, orders) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -404,9 +405,9 @@ app.post('/api/orders/:id/payment', (req, res) => {
     const { id } = req.params; // app_id
     const { method, amount, reference } = req.body;
 
-    // Update order status to 'paid' and 'Selesai' (Completed)
-    // Also save paymentMethod and paymentReference
-    const query = 'UPDATE orders SET paymentStatus = "paid", status = "Selesai", paymentMethod = ?, paymentReference = ?, paidAt = NOW() WHERE app_id = ?';
+    // Update order: mark payment as paid and move to kitchen processing
+    // Status flow: Menunggu Pembayaran -> (payment) -> Sedang Diproses -> (kitchen) -> Siap Saji -> (served) -> Selesai
+    const query = 'UPDATE orders SET paymentStatus = "paid", status = "Sedang Diproses", paymentMethod = ?, paymentReference = ?, paidAt = NOW() WHERE app_id = ?';
     db.query(query, [method, reference || null, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         if (result.affectedRows === 0) return res.status(404).json({ error: 'Order not found' });

@@ -158,7 +158,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       userId: user?.id ?? 'guest',
       userName: details.customerName,
       totalPrice: total,
-      status: 'Sedang Diproses', // Initial Status
+      status: 'Menunggu Pembayaran', // Wait for payment before processing
       promoCode: _promo?.code,
       discount: _discountValue,
       timestamp: DateTime.now(),

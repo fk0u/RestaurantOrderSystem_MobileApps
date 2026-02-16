@@ -17,8 +17,8 @@ class MainWrapper extends ConsumerStatefulWidget {
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
   // Map Navbar Index to Shell Branch Index based on role
-  int _mapIndex(int navIndex, bool isAdminOrStaff) {
-    if (isAdminOrStaff) return navIndex;
+  int _mapIndex(int navIndex, bool showTableLayout) {
+    if (showTableLayout) return navIndex;
     // Customer: Skip index 0 (Tables)
     // 0 -> 1 (Home)
     // 1 -> 2 (Orders)
@@ -28,14 +28,14 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
   }
 
   // Map Shell Branch Index to Navbar Index based on role
-  int _unmapIndex(int shellIndex, bool isAdminOrStaff) {
-    if (isAdminOrStaff) return shellIndex;
+  int _unmapIndex(int shellIndex, bool showTableLayout) {
+    if (showTableLayout) return shellIndex;
     if (shellIndex == 0) return 0; // Should not happen for customer
     return shellIndex - 1;
   }
 
-  void _goBranch(int navIndex, bool isAdminOrStaff) {
-    final branchIndex = _mapIndex(navIndex, isAdminOrStaff);
+  void _goBranch(int navIndex, bool showTableLayout) {
+    final branchIndex = _mapIndex(navIndex, showTableLayout);
     widget.navigationShell.goBranch(
       branchIndex,
       initialLocation: branchIndex == widget.navigationShell.currentIndex,
@@ -46,13 +46,10 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final user = authState.valueOrNull;
-    final isAdminOrStaff =
-        user?.role == 'admin' ||
-        user?.role == 'staff' ||
-        user?.role == 'kitchen';
+    final showTableLayout = user?.role == 'admin' || user?.role == 'cashier';
 
     final destinations = <NavigationDestination>[
-      if (isAdminOrStaff)
+      if (showTableLayout)
         const NavigationDestination(
           icon: Icon(Icons.table_restaurant_outlined),
           selectedIcon: Icon(Icons.table_restaurant, color: AppColors.primary),
@@ -82,14 +79,14 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
     final currentShellIndex = widget.navigationShell.currentIndex;
     // For customers, if they are somehow on index 0 (Tables), default to Home (index 0 of navbar -> 1 of shell)
-    if (!isAdminOrStaff && currentShellIndex == 0) {
+    if (!showTableLayout && currentShellIndex == 0) {
       // This might happen on initial load if redirect logic fails or previous state persists
       // But AppRouter redirect should handle it.
       // Just in case, we don't return anything special, the mapping handles it visualy?
       // No, we need safe index.
     }
 
-    final navIndex = _unmapIndex(currentShellIndex, isAdminOrStaff);
+    final navIndex = _unmapIndex(currentShellIndex, showTableLayout);
     // Safety check
     final safeNavIndex = navIndex.clamp(0, destinations.length - 1);
 
@@ -114,7 +111,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
             backgroundColor: Colors.transparent,
             indicatorColor: AppColors.primary.withValues(alpha: 0.15),
             selectedIndex: safeNavIndex,
-            onDestinationSelected: (idx) => _goBranch(idx, isAdminOrStaff),
+            onDestinationSelected: (idx) => _goBranch(idx, showTableLayout),
             labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
             destinations: destinations,
           ),
